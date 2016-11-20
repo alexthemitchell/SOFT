@@ -1,7 +1,7 @@
 {
 -- Output from grammar.y
 --  DO NOT MAKE CHANGES IN THIS FILE
---  Instead, edit grammar.y and run
+--  Instead, edit grammar.y and run:
 --  happy grammar.y
 }
 
