@@ -6,6 +6,7 @@ data Exp where
   EChar :: Char -> Exp
   EStr  :: String -> Exp
   ELst  :: [Exp] -> Exp
+  EErr  :: String -> Exp
   --Numeric Operations
   EAdd :: Exp -> Exp -> Exp  
   ESub :: Exp -> Exp -> Exp
@@ -38,8 +39,9 @@ data Exp where
 instance Show Exp where
     show (EInt n)  = show n
     show (EBool b) = show b
-    show (EChar c) = show c
-    show (EStr s)  = show s
+    show (EChar c) = [c] 
+    show (EStr s)  = s
+    show (EErr e)  = "Error: " ++ e
     show (EAdd e1 e2) = (show e1) ++ "+"   ++ (show e2)
     show (ESub e1 e2) = (show e1) ++ "-"   ++ (show e2)
     show (EMul e1 e2) = (show e1) ++ "*"   ++ (show e2)
@@ -62,6 +64,7 @@ value (EBool _)   = True
 value (EChar _)   = True
 value (EStr _)    = True
 value (ELst _)    = True
+value (EErr _)    = True
 value (EAdd _ _)  = False 
 value (ESub _ _)  = False 
 value (EMul _ _)  = False 
@@ -85,25 +88,39 @@ value (EFunc _ _) = False
 value (EApp _ _)  = False
 value (EClos _)   = True
 
-step :: Exp -> Exp 
+step :: Exp -> Exp
 step (EInt  n) = EInt n
 step (EBool b) = EBool b
 step (EChar c) = EChar c
 step (EStr  s) = EStr s
 step (ELst  l) = ELst l
+step (EErr  e) = EErr e 
 step (EAdd (EInt e1) (EInt e2))   = step $ EInt $ e1 + e2
+step (EAdd _ _)   = EErr "+ takes int int" 
 step (ESub (EInt e1) (EInt e2))   = step $ EInt $ e1 - e2
+step (ESub _ _)   = EErr "- takes int int" 
 step (EMul (EInt e1) (EInt e2))   = step $ EInt $ e1 * e2
+step (EMul _ _)   = EErr "* takes int int" 
 step (EDiv (EInt e1) (EInt e2))   = step $ EInt $ e1 `div` e2
+step (EDiv _ _)   = EErr "/ takes int int" 
 step (EMod (EInt e1) (EInt e2))   = step $ EInt $ e1 `mod` e2
+step (EMod _ _)   = EErr "mod takes int int" 
 step (EEql (EInt e1) (EInt e2))   = step $ EBool $ e1 == e2 
+step (EEql _ _)   = EErr "== takes int int" 
 step (EGtn (EInt e1) (EInt e2))   = step $ EBool $ e1 > e2
+step (EGtn _ _)   = EErr "> takes int int" 
 step (ELtn (EInt e1) (EInt e2))   = step $ EBool $ e1 < e2 
+step (ELtn _ _)   = EErr "< takes int int" 
 step (EGeq (EInt e1) (EInt e2))   = step $ EBool $ e1 >= e2 
+step (EGeq _ _)   = EErr ">= takes int int" 
 step (ELeq (EInt e1) (EInt e2))   = step $ EBool $ e1 <= e2
+step (ELeq _ _)   = EErr "<= takes int int" 
 step (EAnd (EBool b1) (EBool b2)) = step $ EBool $  b1 &&  b2 --let and take a list?? 
+step (EAnd _ _)   = EErr "and takes bool bool" 
 step (EOr  (EBool b1) (EBool b2)) = step $ EBool $ b1 || b2 
+step (EOr  _ _)   = EErr "or takes bool bool" 
 step (ENot (EBool b))             = step $ EBool $ not b
+step (ENot _)   = EErr "not takes bool" 
 --step (EFst (ELst (ECons (EInt x) xs)))     = step $ EInt x
 --step (EFst (ELst (EStr l)))     = step $ EInt $ head l
 --step (EFst (ELst (EBool l)))     = step $ EInt $ head l
