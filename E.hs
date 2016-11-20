@@ -35,6 +35,27 @@ data Exp where
   EApp  :: Exp -> Exp -> Exp --Applies given function to expression  
   EClos :: Exp -> Exp --For parenthesis, brackets etc. 
 
+instance Show Exp where
+    show (EInt n)  = show n
+    show (EBool b) = show b
+    show (EChar c) = show c
+    show (EStr s)  = show s
+    show (EAdd e1 e2) = (show e1) ++ "+"   ++ (show e2)
+    show (ESub e1 e2) = (show e1) ++ "-"   ++ (show e2)
+    show (EMul e1 e2) = (show e1) ++ "*"   ++ (show e2)
+    show (EDiv e1 e2) = (show e1) ++ "/"   ++ (show e2)
+    show (EMod e1 e2) = (show e1) ++ "mod" ++ (show e2)
+    show (EEql e1 e2) = (show e1) ++ "=="  ++ (show e2)
+    show (ELtn e1 e2) = (show e1) ++ "<"   ++ (show e2)
+    show (EGtn e1 e2) = (show e1) ++ ">"   ++ (show e2)
+    show (ELeq e1 e2) = (show e1) ++ "<="  ++ (show e2)
+    show (EGeq e1 e2) = (show e1) ++ ">="  ++ (show e2)
+    show (EAnd e1 e2) = (show e1) ++ "and" ++ (show e2)
+    show (EOr  e1 e2) = (show e1) ++ "or"  ++ (show e2)
+    show (ENot e)     = "not"     ++          (show e)
+    
+
+
 value :: Exp -> Bool 
 value (EInt _)    = True
 value (EBool _)   = True
@@ -88,3 +109,8 @@ step (ENot (EBool b))             = step $ EBool $ not b
 --step (EFst (ELst (EBool l)))     = step $ EInt $ head l
 --step (ECons (EInt x) (ELst xs)) = step $ ELst $ (x:xs)  
 
+
+evaluate :: Exp -> Exp
+evaluate e 
+  | not $ value e = evaluate (step e)
+  | otherwise     =  e
