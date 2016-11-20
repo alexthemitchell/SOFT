@@ -70,18 +70,21 @@ step (EBool b) = EBool b
 step (EChar c) = EChar c
 step (EStr  s) = EStr s
 step (ELst  l) = ELst l
-step (EAdd e1 e2) = (step e1) + (step e2)
-step (ESub e1 e2) = (step e1) - (step e2) 
-step (EMul e1 e2) = (step e1) * (step e2)
-step (EDiv e1 e2) = (step e1) / (step e2) 
-step (EMod e1 e2) = (step e1) `mod` (step e2)
-step (EEql e1 e2) = EBool $ (step e1) == (step e2) 
-step (EGtn e1 e2) = EBool $ (step e1) > (step e2)
-step (ELtn e1 e2) = EBool $ (step e1) < (step e2) 
-step (EGeq e1 e2) = EBool $ (step e1) >= (step e2) 
-step (ELeq e1 e2) = EBool $ (step e1) <= (step e2)
-step (EAnd b1 b2) = (EBool (step b1)) && (EBool (step b2)) --let and take a list?? 
-step (EOr  b1 b2) = EBool $ (step b1) || (step b2) 
-step (ENot e)     = not $ step e
-step (EFst l)     = head $ step l
+step (EAdd (EInt e1) (EInt e2))   = step $ EInt $ e1 + e2
+step (ESub (EInt e1) (EInt e2))   = step $ EInt $ e1 - e2
+step (EMul (EInt e1) (EInt e2))   = step $ EInt $ e1 * e2
+step (EDiv (EInt e1) (EInt e2))   = step $ EInt $ e1 `div` e2
+step (EMod (EInt e1) (EInt e2))   = step $ EInt $ e1 `mod` e2
+step (EEql (EInt e1) (EInt e2))   = step $ EBool $ e1 == e2 
+step (EGtn (EInt e1) (EInt e2))   = step $ EBool $ e1 > e2
+step (ELtn (EInt e1) (EInt e2))   = step $ EBool $ e1 < e2 
+step (EGeq (EInt e1) (EInt e2))   = step $ EBool $ e1 >= e2 
+step (ELeq (EInt e1) (EInt e2))   = step $ EBool $ e1 <= e2
+step (EAnd (EBool b1) (EBool b2)) = step $ EBool $  b1 &&  b2 --let and take a list?? 
+step (EOr  (EBool b1) (EBool b2)) = step $ EBool $ b1 || b2 
+step (ENot (EBool b))             = step $ EBool $ not b
+--step (EFst (ELst (ECons (EInt x) xs)))     = step $ EInt x
+--step (EFst (ELst (EStr l)))     = step $ EInt $ head l
+--step (EFst (ELst (EBool l)))     = step $ EInt $ head l
+--step (ECons (EInt x) (ELst xs)) = step $ ELst $ (x:xs)  
 
