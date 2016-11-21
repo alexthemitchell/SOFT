@@ -46,40 +46,50 @@ instance Show Exp where
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) = 
      case op of
-      BAdd -> (show e1) ++ "+"   ++ (show e2)
-      BSub -> (show e1) ++ "-"   ++ (show e2)
-      BMul -> (show e1) ++ "*"   ++ (show e2)
-      BDiv -> (show e1) ++ "/"   ++ (show e2)
-      BMod -> (show e1) ++ "mod" ++ (show e2)
-      BEql -> (show e1) ++ "=="  ++ (show e2)
-      BLtn -> (show e1) ++ "<"   ++ (show e2)
-      BGtn -> (show e1) ++ ">"   ++ (show e2)
-      BLeq -> (show e1) ++ "<="  ++ (show e2)
-      BGeq -> (show e1) ++ ">="  ++ (show e2)
-      BAnd -> (show e1) ++ "and" ++ (show e2)
-      BOr  -> (show e1) ++ "or"  ++ (show e2)
-    show (ENot e)     = "not"     ++          (show e)
-    
+      BAdd -> (show e1) ++ " + "   ++ (show e2)
+      BSub -> (show e1) ++ " - "   ++ (show e2)
+      BMul -> (show e1) ++ " * "   ++ (show e2)
+      BDiv -> (show e1) ++ " / "   ++ (show e2)
+      BMod -> (show e1) ++ " mod " ++ (show e2)
+      BEql -> (show e1) ++ " == "  ++ (show e2)
+      BLtn -> (show e1) ++ " < "   ++ (show e2)
+      BGtn -> (show e1) ++ " > "   ++ (show e2)
+      BLeq -> (show e1) ++ " <= "  ++ (show e2)
+      BGeq -> (show e1) ++ " >= "  ++ (show e2)
+      BAnd -> (show e1) ++ " and " ++ (show e2)
+      BOr  -> (show e1) ++ " or "  ++ (show e2)
+    show (ENot e)     = "not " ++ (show e)
+    show (EFst l)     = "first " ++ (show l)
+    show (ERst l)     = "[" ++ (show l) ++ "]"
+    show ENil         = "[]"
+    show (ECons v l) = (show v) ++ ":" ++ (show l)
+    show (EEmt l)     = "empty " ++ (show l)         
 
 
 value :: Exp -> Bool 
-value (EInt _)    = True
-value (EBool _)   = True
-value (EChar _)   = True
-value (EStr _)    = True
-value (ELst l)    = all value l --all :: (a -> Bool) -> [a] -> Bool
-value (EErr _)    = True
-value (EVar _)    = True
-value (EClos _)   = True
+value (EInt _)        = True
+value (EBool _)       = True
+value (EChar _)       = True
+value (EStr _)        = True
+value (ELst l)        = all value l --all :: (a -> Bool) -> [a] -> Bool
+value (EErr _)        = True
+value (EVar _)        = True
+value (EClos _)       = True
+value (EFunc _ _ _ _) = True
+value (ELet _ _ _)    = True
+value (EVar _)        = True
 value _           = False
-
-step :: Exp -> Exp
+--Env ->  Exp -> (Exp, Env)
+     
+step ELet s v e1
+step :: Exp -> Exp 
 step (EInt  n) = EInt n
 step (EBool b) = EBool b
 step (EChar c) = EChar c
 step (EStr  s) = EStr s
 step (ELst  l) = ELst l
-step (EErr  e) = EErr e 
+step (EErr  e) = EErr e  
+step (EVar  s) = EVar s
 step (EBinop e1 op e2) 
   | not $ value e1 = EBinop (step e1) op e2 
   | not $ value e2 = EBinop e1 op (step e2)
@@ -141,13 +151,37 @@ step (ECons v l)
       (ELst l) -> ELst $ v:l
       ENil     -> ELst $ v: []
       _        -> EErr "cons takes a value and a list"
-step ENil = ELst $ [] 
+step ENil = ELst $ []
+{--
+step (EApp e1 e2)
+  | not $ value e1 = EApp (step e1) e2
+  | not $ value e2 = EApp e1 (step e2)
+  | otherwise      =
+    case e1 of
+     (ELet s v e1)     -> subst s v e1 
+     (EFunc s l s1 s2) -> subst s v s2
+     
+step (ELet s v e1)
+  | not $ value v  = ELet (step v) e1
+  | not $ value e1 = ELet v (step e1)
+  | otherwise      =
+    case 
+step EFunc s (x:xs) e1 e2
   
-      
-  
---step (ECons (EInt x) (ELst xs)) = step $ ELst $ (x:xs)  
+subst :: String -> Exp -> Exp -> Exp
+subst x v (EAdd ) = 
+--}
+{--
+  let x = 5 in x + 1
+  ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
 
+  let f(x) = x+1 in f(0)
+  EFunc f [x] (EAdd (EVar "x") (EInt 1)) (EApp f [0]))  
 
+  ELet  :: String -> Exp -> Exp -> Exp -- let x = e1 in e2
+  EVar  :: String -> Exp --x 
+  EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
+--}
 evaluate :: Exp -> Exp
 evaluate e 
   | not $ value e = evaluate (step e)
