@@ -3,7 +3,8 @@
 --  DO NOT MAKE CHANGES IN THIS FILE
 --  Instead, edit grammar.y and run:
 --  happy grammar.y
-import lexer
+import SOFTLexer
+import SOFTEval
 }
 
 %name parse
@@ -28,20 +29,17 @@ import lexer
   '['   { TokenLSqBrkt }
   ']'   { TokenRSqBrkt }
   '"'   { TokenQuotation }
-
+  int   { TokenInt $$ }
+  str   { TokenStr $$ }
 %% 
 
-Exp : let var '=' Exp { Let $2 $4 }
-    | Exp1            { Exp1 $1 }
+Exp : let var '=' Exp { ENil }
+    | Exp1            { evaluate $1 } 
 
-Exp1 : Exp1 '+' Term  { Plus $1 $3 }
-     | Exp1 '-' Term  { Minus $1 $3 }
-     | Term           { Term $1 }
-
-Term : Exp1 '*' Term  { Times $1 $3 }
-     | Exp1 '/' Term  { Div $1 $3 }
-     | Factor         { Factor $1 }
-
-Factor : int          { Int $1 }
-       | var          { Var $1 }
-       | '(' Exp ')'  { Brack $2 }
+Exp1 : Exp1 '+' Exp1  { EAdd $1 $3 }
+     | Exp1 '-' Exp1  { ESub $1 $3 }
+     | Exp1 '*' Exp1  { EMul $1 $3 }
+     | Exp1 '/' Exp1  { EDiv $1 $3 }
+     | int            { EInt $1 }
+     | str            { EStr $1 }
+     | '(' Exp ')'    { EClos $2 }
