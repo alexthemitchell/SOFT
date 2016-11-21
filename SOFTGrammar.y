@@ -54,21 +54,21 @@ Val   : Num               { Num $1 }
       | str               { EStr $1 }
       | Bool              { Bool $1 }
 
-Bool   : true              { EBool True }
+Bool   : true             { EBool True }
       | false             { EBool False } 
 
 Num   : int               { EInt $1 }
 
-Op    : Num '+' Num       { EAdd $1 $3 }
-      | Num '-' Num       { ESub $1 $3 }
-      | Num '*' Num       { EMul $1 $3 }
-      | Num '/' Num       { EDiv $1 $3 }
-      | Num 'mod' Num     { EMod $1 $3 }
-      | Val '==' Val      { EEql $1 $3 }
-      | Num '<' Num       { ELtn $1 $3 }
-      | Num '>' Num       { EGtn $1 $3 }
-      | Num '>=' Num      { EGeq $1 $3 }
-      | Num '<=' Num      { ELeq $1 $3 }
-      | Bool 'and' Bool   { EAnd $1 $3 }
-      | Bool 'or' Bool    { EOr $1 $3 }
+Op    : Num '+' Num       { BAdd $1 $3 }
+      | Num '-' Num       { BSub $1 $3 }
+      | Num '*' Num       { BMul $1 $3 }
+      | Num '/' Num       { BDiv $1 $3 }
+      | Num 'mod' Num     { BMod $1 $3 }
+      | Val '==' Val      { BEql $1 $3 }
+      | Num '<' Num       { BLtn $1 $3 }
+      | Num '>' Num       { BGtn $1 $3 }
+      | Num '>=' Num      { BGeq $1 $3 }
+      | Num '<=' Num      { BLeq $1 $3 }
+      | Bool 'and' Bool   { BAnd $1 $3 }
+      | Bool 'or' Bool    { BOr $1 $3 }
       | 'not' Bool        { ENot $2 }
