@@ -1,6 +1,11 @@
 {-# Language GADTs #-}
 module SOFTEval where
 
+data Bop = 
+  BAdd | BSub | BMul | BDiv | BMod | 
+  BEql | BLtn | BGtn | BGeq | BLeq |
+  BAnd | BOr 
+
 data Exp where
   --Types
   EInt  :: Int -> Exp
@@ -10,20 +15,7 @@ data Exp where
   ELst  :: [Exp] -> Exp
   EErr  :: String -> Exp
   --Numeric Operations
-  EAdd :: Exp -> Exp -> Exp  
-  ESub :: Exp -> Exp -> Exp
-  EMul :: Exp -> Exp -> Exp 
-  EDiv :: Exp -> Exp -> Exp 
-  EMod :: Exp -> Exp -> Exp 
-  --Comparative Operations
-  EEql :: Exp -> Exp -> Exp 
-  ELtn :: Exp -> Exp -> Exp 
-  EGtn :: Exp -> Exp -> Exp 
-  EGeq :: Exp -> Exp -> Exp 
-  ELeq :: Exp -> Exp -> Exp
-  --boolean operations
-  EAnd :: Exp -> Exp -> Exp 
-  EOr  :: Exp -> Exp -> Exp
+  EBinop :: Exp -> Bop -> Exp -> Exp
   ENot :: Exp -> Exp
   --List Operations
   EFst  :: Exp -> Exp
@@ -32,10 +24,18 @@ data Exp where
   ECons :: Exp -> Exp -> Exp --takes two ELsts
   ENil  :: Exp 
   -- Let Statements 
-  EVar  :: String -> Exp --let  
-  EFunc :: String -> Exp -> Exp --let for functions 
+{--
+  let x = 5 in x + 1
+  ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
+
+  let f(x) = x+1 in f(0)
+  EFunc f [x] (EAdd (EVar "x") (EInt 1)) (EApp f [0]))  
+--}
+  ELet  :: String -> Exp -> Exp -> Exp -- let x = e1 in e2
+  EVar  :: String -> Exp --x 
+  EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
   --General Operations  
-  EApp  :: Exp -> Exp -> Exp --Applies given function to expression  
+  EApp  :: String -> [Exp] -> Exp --Applies given function to expression  
   EClos :: Exp -> Exp --For parenthesis, brackets etc. 
 
 instance Show Exp where
@@ -44,18 +44,20 @@ instance Show Exp where
     show (EChar c) = [c] 
     show (EStr s)  = s
     show (EErr e)  = "Error: " ++ e
-    show (EAdd e1 e2) = (show e1) ++ "+"   ++ (show e2)
-    show (ESub e1 e2) = (show e1) ++ "-"   ++ (show e2)
-    show (EMul e1 e2) = (show e1) ++ "*"   ++ (show e2)
-    show (EDiv e1 e2) = (show e1) ++ "/"   ++ (show e2)
-    show (EMod e1 e2) = (show e1) ++ "mod" ++ (show e2)
-    show (EEql e1 e2) = (show e1) ++ "=="  ++ (show e2)
-    show (ELtn e1 e2) = (show e1) ++ "<"   ++ (show e2)
-    show (EGtn e1 e2) = (show e1) ++ ">"   ++ (show e2)
-    show (ELeq e1 e2) = (show e1) ++ "<="  ++ (show e2)
-    show (EGeq e1 e2) = (show e1) ++ ">="  ++ (show e2)
-    show (EAnd e1 e2) = (show e1) ++ "and" ++ (show e2)
-    show (EOr  e1 e2) = (show e1) ++ "or"  ++ (show e2)
+    show (EBinop e1 op e2) = 
+     case op of
+      BAdd -> (show e1) ++ "+"   ++ (show e2)
+      BSub -> (show e1) ++ "-"   ++ (show e2)
+      BMul -> (show e1) ++ "*"   ++ (show e2)
+      BDiv -> (show e1) ++ "/"   ++ (show e2)
+      BMod -> (show e1) ++ "mod" ++ (show e2)
+      BEql -> (show e1) ++ "=="  ++ (show e2)
+      BLtn -> (show e1) ++ "<"   ++ (show e2)
+      BGtn -> (show e1) ++ ">"   ++ (show e2)
+      BLeq -> (show e1) ++ "<="  ++ (show e2)
+      BGeq -> (show e1) ++ ">="  ++ (show e2)
+      BAnd -> (show e1) ++ "and" ++ (show e2)
+      BOr  -> (show e1) ++ "or"  ++ (show e2)
     show (ENot e)     = "not"     ++          (show e)
     
 
@@ -65,30 +67,11 @@ value (EInt _)    = True
 value (EBool _)   = True
 value (EChar _)   = True
 value (EStr _)    = True
-value (ELst _)    = True
+value (ELst l)    = all value l --all :: (a -> Bool) -> [a] -> Bool
 value (EErr _)    = True
-value (EAdd _ _)  = False 
-value (ESub _ _)  = False 
-value (EMul _ _)  = False 
-value (EDiv _ _)  = False
-value (EMod _ _)  = False
-value (EEql _ _)  = False 
-value (ELtn _ _)  = False 
-value (EGtn _ _)  = False
-value (EGeq _ _)  = False
-value (ELeq _ _)  = False 
-value (EAnd _ _)  = False 
-value (EOr  _ _)  = False
-value (ENot _)    = False
-value (EFst _)    = False 
-value (ERst _)    = False 
-value (EEmt _)    = False
-value (ECons _ _) = False
-value (ENil)      = False 
 value (EVar _)    = True
-value (EFunc _ _) = False 
-value (EApp _ _)  = False
 value (EClos _)   = True
+value _           = False
 
 step :: Exp -> Exp
 step (EInt  n) = EInt n
@@ -97,35 +80,71 @@ step (EChar c) = EChar c
 step (EStr  s) = EStr s
 step (ELst  l) = ELst l
 step (EErr  e) = EErr e 
-step (EAdd (EInt e1) (EInt e2))   = step $ EInt $ e1 + e2
-step (EAdd _ _)   = EErr "+ takes int int" 
-step (ESub (EInt e1) (EInt e2))   = step $ EInt $ e1 - e2
-step (ESub _ _)   = EErr "- takes int int" 
-step (EMul (EInt e1) (EInt e2))   = step $ EInt $ e1 * e2
-step (EMul _ _)   = EErr "* takes int int" 
-step (EDiv (EInt e1) (EInt e2))   = step $ EInt $ e1 `div` e2
-step (EDiv _ _)   = EErr "/ takes int int" 
-step (EMod (EInt e1) (EInt e2))   = step $ EInt $ e1 `mod` e2
-step (EMod _ _)   = EErr "mod takes int int" 
-step (EEql (EInt e1) (EInt e2))   = step $ EBool $ e1 == e2 
-step (EEql _ _)   = EErr "== takes int int" 
-step (EGtn (EInt e1) (EInt e2))   = step $ EBool $ e1 > e2
-step (EGtn _ _)   = EErr "> takes int int" 
-step (ELtn (EInt e1) (EInt e2))   = step $ EBool $ e1 < e2 
-step (ELtn _ _)   = EErr "< takes int int" 
-step (EGeq (EInt e1) (EInt e2))   = step $ EBool $ e1 >= e2 
-step (EGeq _ _)   = EErr ">= takes int int" 
-step (ELeq (EInt e1) (EInt e2))   = step $ EBool $ e1 <= e2
-step (ELeq _ _)   = EErr "<= takes int int" 
-step (EAnd (EBool b1) (EBool b2)) = step $ EBool $  b1 &&  b2 --let and take a list?? 
-step (EAnd _ _)   = EErr "and takes bool bool" 
-step (EOr  (EBool b1) (EBool b2)) = step $ EBool $ b1 || b2 
-step (EOr  _ _)   = EErr "or takes bool bool" 
-step (ENot (EBool b))             = step $ EBool $ not b
-step (ENot _)   = EErr "not takes bool" 
---step (EFst (ELst (ECons (EInt x) xs)))     = step $ EInt x
---step (EFst (ELst (EStr l)))     = step $ EInt $ head l
---step (EFst (ELst (EBool l)))     = step $ EInt $ head l
+step (EBinop e1 op e2) 
+  | not $ value e1 = EBinop (step e1) op e2 
+  | not $ value e2 = EBinop e1 op (step e2)
+  | otherwise      =
+     case (e1, op ,e2) of
+       (EInt n1, BAdd, EInt n2) -> EInt  $ n1 + n2 
+       ( _     , BAdd, _      ) -> EErr  $ "+ takes int, int"
+       (EInt n1, BSub, EInt n2) -> EInt  $ n1 - n2      
+       ( _     , BSub, _      ) -> EErr  $ "- takes int, int"
+       (EInt n1, BMul, EInt n2) -> EInt  $ n1 * n2 
+       ( _     , BMul, _      ) -> EErr  $ "* takes int, int"
+       (EInt n1, BDiv, EInt n2) -> EInt  $ n1 `div` n2 
+       ( _     , BDiv, _      ) -> EErr  $ "/ takes int, int"
+       (EInt n1, BMod, EInt n2) -> EInt  $ n1 `mod` n2      
+       ( _     , BMod, _      ) -> EErr  $ "mod takes int, int"
+       (EInt n1, BEql, EInt n2) -> EBool $ n1 == n2
+       ( _     , BEql, _      ) -> EErr  $ "== takes int, int"
+       (EInt n1, BLtn, EInt n2) -> EBool $ n1 < n2 
+       ( _     , BLtn, _      ) -> EErr  $ "< takes int, int"
+       (EInt n1, BGtn, EInt n2) -> EBool $ n1 > n2      
+       ( _     , BGtn, _      ) -> EErr  $ "> takes int, int"
+       (EInt n1, BLeq, EInt n2) -> EBool $ n1 <= n2 
+       ( _     , BLeq, _      ) -> EErr  $ "<= takes int, int"
+       (EInt n1, BGeq, EInt n2) -> EBool $ n1 >= n2 
+       ( _     , BGeq, _      ) -> EErr  $ ">= takes int, int"
+       (EBool b1, BAnd, EBool b2) -> EBool $ b1 && b2      
+       ( _      , BAnd, _      ) -> EErr  $ "and takes bool, bool"
+       (EBool b1, BOr , EBool b2) -> EBool $ b1 || b2 
+       ( _      , BOr , _      ) -> EErr  $ "or takes bool, bool"
+step (ENot b)             
+  |not $ value b = ENot (step b)
+  |otherwise     = 
+     case b of 
+       (EBool b1) -> EBool $ not b1
+       _          -> EErr $ "not takes bool"
+step (EFst l)     
+  | not $ value l = EFst (step l)
+  | otherwise     =
+     case l of 
+      (ELst (x:_)) -> step x
+      _            -> EErr $ "first takes a list"
+step (ERst l) 
+  | not $ value l = EFst (step l)
+  | otherwise     =
+     case l of 
+      (ELst (_:xs)) -> ELst $ xs 
+      _             -> EErr $ "rest takes a list"
+step (EEmt l) 
+  |not $ value l = EEmt (step l)
+  |otherwise     =
+    case l of 
+     ENil -> EBool True
+     _    -> EBool False
+step (ECons v l)
+  |not $ value v = ECons (step v) l
+  |not $ value l = ECons v (step l)
+  |otherwise     =
+    case l of 
+      (ELst l) -> ELst $ v:l
+      ENil     -> ELst $ v: []
+      _        -> EErr "cons takes a value and a list"
+step ENil = ELst $ [] 
+  
+      
+  
 --step (ECons (EInt x) (ELst xs)) = step $ ELst $ (x:xs)  
 
 
