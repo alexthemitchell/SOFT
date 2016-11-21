@@ -47,8 +47,8 @@ Exp : let var '=' Exp { ENil }
     | Exp1            { evaluate $1 } 
 
 Exp1 : int            { EInt $1 }
-     | true           { EBool $1 }
-     | false          { EBool $1 }
+     | true           { True }
+     | false          { False }
      | str            { EStr $1 }
      | Exp1 '+' Exp1  { EAdd $1 $3 }
      | Exp1 '-' Exp1  { ESub $1 $3 }
