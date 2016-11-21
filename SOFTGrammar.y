@@ -72,5 +72,3 @@ Op    : Num '+' Num       { EAdd $1 $3 }
       | Bool 'and' Bool   { EAnd $1 $3 }
       | Bool 'or' Bool    { EOr $1 $3 }
       | 'not' Bool        { ENot $2 }
-
-
