@@ -46,29 +46,21 @@ import SOFTEval
 Exp   : let var '=' Exp   { ENil }
       | Exp1              { evaluate $1 } 
 
-Exp1  : Val               { Val $1}
-      | Op                { Op $1 }
---    | '(' Exp1 ')'      { Val $2 }
-
-Val   : Num               { Num $1 }
+Exp1  : int               { EInt $1 }
       | str               { EStr $1 }
-      | Bool              { Bool $1 }
-
-Bool   : true             { EBool True }
+--    | '(' Exp1 ')'      { Val $2 }
+      | true              { EBool True }
       | false             { EBool False } 
-
-Num   : int               { EInt $1 }
-
-Op    : Num '+' Num       { BAdd $1 $3 }
-      | Num '-' Num       { BSub $1 $3 }
-      | Num '*' Num       { BMul $1 $3 }
-      | Num '/' Num       { BDiv $1 $3 }
-      | Num 'mod' Num     { BMod $1 $3 }
-      | Val '==' Val      { BEql $1 $3 }
-      | Num '<' Num       { BLtn $1 $3 }
-      | Num '>' Num       { BGtn $1 $3 }
-      | Num '>=' Num      { BGeq $1 $3 }
-      | Num '<=' Num      { BLeq $1 $3 }
-      | Bool 'and' Bool   { BAnd $1 $3 }
-      | Bool 'or' Bool    { BOr $1 $3 }
-      | 'not' Bool        { ENot $2 }
+      | Exp1 '+' Exp1       { EBinop $1 BAdd $3 }
+      | Exp1 '-' Exp1       { EBinop $1 BSub $3 }
+      | Exp1 '*' Exp1       { EBinop $1 BMul $3 }
+      | Exp1 '/' Exp1       { EBinop $1 BDiv $3 }
+      | Exp1 'mod' Exp1     { EBinop $1 BMod $3 }
+      | Exp1 '==' Exp1      { EBinop $1 BEql $3 }
+      | Exp1 '<' Exp1       { EBinop $1 BLtn $3 }
+      | Exp1 '>' Exp1       { EBinop $1 BGtn $3 }
+      | Exp1 '>=' Exp1      { EBinop $1 BGeq $3 }
+      | Exp1 '<=' Exp1      { EBinop $1 BLeq $3 }
+      | Exp1 'and' Exp1   { EBinop $1 BAnd $3 }
+      | Exp1 'or' Exp1    { EBinop $1 BOr $3 }
+      | 'not' Exp1        { ENot $2 }         
