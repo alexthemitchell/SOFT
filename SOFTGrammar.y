@@ -19,9 +19,18 @@ import SOFTEval
   false { TokenFalse }
   '#'   { TokenComment }
   '='   { TokenEqual }
+  '=='  { TokenDoubleEqual }
   '+'   { TokenPlus } 
   '-'   { TokenMinus}
   '*'   { TokenAsterisk }
+  'mod' { TokenMod }
+  '<'   { TokenLT }
+  '>'   { TokenGT }
+  '<='  { TokenLEQ }
+  '>='  { TokenGEQ }
+  'and' { TokenAnd }
+  'or'  { TokenOr  }
+  'not' { TokenNot }
   '/'   { TokenFSlash }
   '('   { TokenLParen }
   ')'   { TokenRParen }
@@ -37,10 +46,23 @@ import SOFTEval
 Exp : let var '=' Exp { ENil }
     | Exp1            { evaluate $1 } 
 
-Exp1 : Exp1 '+' Exp1  { EAdd $1 $3 }
+Exp1 : int            { EInt $1 }
+     | true           { EBool $1 }
+     | false          { EBool $1 }
+     | str            { EStr $1 }
+     | Exp1 '+' Exp1  { EAdd $1 $3 }
      | Exp1 '-' Exp1  { ESub $1 $3 }
      | Exp1 '*' Exp1  { EMul $1 $3 }
      | Exp1 '/' Exp1  { EDiv $1 $3 }
-     | int            { EInt $1 }
-     | str            { EStr $1 }
+     | Exp1 'mod' Exp1  { EMod $1 $3 }
+     | Exp1 '==' Exp1 { EEQl $1 $3 }
+     | Exp1 '<' Exp1  { ELtn $1 $3 }
+     | Exp1 '>' Exp1  { EGtn $1 $3 }
+     | Exp1 '>=' Exp1 { EGeq $1 $3 }
+     | Exp1 '<=' Exp1 { ELeq $1 $3 }
+     | Exp1 'and' Exp1{ EAnd $1 $3 }
+     | Exp1 'or' Exp1 { EAnd $1 $3 }
+     | 'not' Exp1     { ENot $1 }
      | '(' Exp ')'    { EClos $2 }
+
+
