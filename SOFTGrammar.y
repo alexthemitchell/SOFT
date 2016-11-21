@@ -43,26 +43,34 @@ import SOFTEval
   str   { TokenStr $$ }
 %% 
 
-Exp : let var '=' Exp { ENil }
-    | Exp1            { evaluate $1 } 
+Exp   : let var '=' Exp   { ENil }
+      | Exp1              { evaluate $1 } 
 
-Exp1 : int            { EInt $1 }
-     | true           { True }
-     | false          { False }
-     | str            { EStr $1 }
-     | Exp1 '+' Exp1  { EAdd $1 $3 }
-     | Exp1 '-' Exp1  { ESub $1 $3 }
-     | Exp1 '*' Exp1  { EMul $1 $3 }
-     | Exp1 '/' Exp1  { EDiv $1 $3 }
-     | Exp1 'mod' Exp1  { EMod $1 $3 }
-     | Exp1 '==' Exp1 { EEql $1 $3 }
-     | Exp1 '<' Exp1  { ELtn $1 $3 }
-     | Exp1 '>' Exp1  { EGtn $1 $3 }
-     | Exp1 '>=' Exp1 { EGeq $1 $3 }
-     | Exp1 '<=' Exp1 { ELeq $1 $3 }
-     | Exp1 'and' Exp1{ EAnd $1 $3 }
-     | Exp1 'or' Exp1 { EAnd $1 $3 }
-     | 'not' Exp1     { ENot $2 }
-     | '(' Exp ')'    { EClos $2 }
+Exp1  : Val               { Val $1}
+      | Op                { Op $1 }
+--    | '(' Exp1 ')'      { Val $2 }
+
+Val   : Num               { Num $1 }
+      | str               { EStr $1 }
+      | Bool              { Bool $1 }
+
+Bool   : true              { EBool True }
+      | false             { EBool False } 
+
+Num   : int               { EInt $1 }
+
+Op    : Num '+' Num       { EAdd $1 $3 }
+      | Num '-' Num       { ESub $1 $3 }
+      | Num '*' Num       { EMul $1 $3 }
+      | Num '/' Num       { EDiv $1 $3 }
+      | Num 'mod' Num     { EMod $1 $3 }
+      | Val '==' Val      { EEql $1 $3 }
+      | Num '<' Num       { ELtn $1 $3 }
+      | Num '>' Num       { EGtn $1 $3 }
+      | Num '>=' Num      { EGeq $1 $3 }
+      | Num '<=' Num      { ELeq $1 $3 }
+      | Bool 'and' Bool   { EAnd $1 $3 }
+      | Bool 'or' Bool    { EOr $1 $3 }
+      | 'not' Bool        { ENot $2 }
 
 
