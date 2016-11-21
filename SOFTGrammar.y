@@ -1,14 +1,15 @@
 {
--- Output from grammar.y
+-- Output from SOFTGrammar.y
 --  DO NOT MAKE CHANGES IN THIS FILE
---  Instead, edit grammar.y and run:
---  happy grammar.y
+--  Instead, edit SOFTGrammar.y and run:
+--  happy SOFTGrammar.y
+module SOFTGrammar where
 import SOFTLexer
 import SOFTEval
 }
 
 %name parse
-%tokentype { Token }
+%tokentype { SOFTLexer.Token }
 %error { parseError }
 
 %token
