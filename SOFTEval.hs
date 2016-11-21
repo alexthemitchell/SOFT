@@ -77,11 +77,9 @@ value (EVar _)        = True
 value (EClos _)       = True
 value (EFunc _ _ _ _) = True
 value (ELet _ _ _)    = True
-value (EVar _)        = True
 value _           = False
 --Env ->  Exp -> (Exp, Env)
      
-step ELet s v e1
 step :: Exp -> Exp 
 step (EInt  n) = EInt n
 step (EBool b) = EBool b
