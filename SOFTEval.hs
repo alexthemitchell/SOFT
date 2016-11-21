@@ -104,7 +104,10 @@ step (EBinop e1 op e2)
        (EInt n1, BMod, EInt n2) -> EInt  $ n1 `mod` n2      
        ( _     , BMod, _      ) -> EErr  $ "mod takes int, int"
        (EInt n1, BEql, EInt n2) -> EBool $ n1 == n2
-       ( _     , BEql, _      ) -> EErr  $ "== takes int, int"
+       (EBool b1, BEql, EBool b2) -> EBool $ b1 == b2
+       (EStr s1, BEql,EStr s2) -> EBool    $ s1 == s2
+       (EChar c1, BEql, EChar c2) -> EBool $ c1 == c2
+       ( _     , BEql, _      ) -> EErr  $ "== takes two of the same type" 
        (EInt n1, BLtn, EInt n2) -> EBool $ n1 < n2 
        ( _     , BLtn, _      ) -> EErr  $ "< takes int, int"
        (EInt n1, BGtn, EInt n2) -> EBool $ n1 > n2      
