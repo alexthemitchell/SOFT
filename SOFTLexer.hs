@@ -15,9 +15,18 @@ data Token
       | TokenFalse
       | TokenComment
       | TokenEqual
+      | TokenDoubleEqual
       | TokenPlus
       | TokenMinus
       | TokenAsterisk
+      | TokenMod
+      | TokenLT 
+      | TokenGT
+      | TokenLEQ  
+      | TokenGEQ
+      | TokenAnd
+      | TokenOr
+      | TokenNot
       | TokenFSlash
       | TokenLParen
       | TokenRParen
@@ -35,19 +44,21 @@ lexer (c:cs)
       | isSpace c = lexer cs
       | isAlpha c = lexVar (c:cs)
       | isDigit c = lexNum (c:cs)
-lexer ('#':cs) = TokenComment : lexer cs
-lexer ('=':cs) = TokenEqual : lexer cs
-lexer ('+':cs) = TokenPlus : lexer cs
-lexer ('-':cs) = TokenMinus : lexer cs
-lexer ('*':cs) = TokenAsterisk : lexer cs
-lexer ('/':cs) = TokenFSlash : lexer cs
-lexer ('(':cs) = TokenLParen : lexer cs
-lexer (')':cs) = TokenRParen : lexer cs
-lexer ('{':cs) = TokenLBrace : lexer cs
-lexer ('}':cs) = TokenRBrace : lexer cs
-lexer ('[':cs) = TokenLSqBrkt : lexer cs
-lexer (']':cs) = TokenLSqBrkt : lexer cs
-lexer ('"':cs) = TokenQuotation : lexer cs
+lexer ('#':cs)   = TokenComment : lexer cs
+lexer ('<':cs)   = TokenLT : lexer cs
+lexer ('>':cs)   = TokenGT : lexer cs
+lexer ('=':cs)   = TokenEqual : lexer cs
+lexer ('+':cs)   = TokenPlus : lexer cs
+lexer ('-':cs)   = TokenMinus : lexer cs
+lexer ('*':cs)   = TokenAsterisk : lexer cs
+lexer ('/':cs)   = TokenFSlash : lexer cs
+lexer ('(':cs)   = TokenLParen : lexer cs
+lexer (')':cs)   = TokenRParen : lexer cs
+lexer ('{':cs)   = TokenLBrace : lexer cs
+lexer ('}':cs)   = TokenRBrace : lexer cs
+lexer ('[':cs)   = TokenLSqBrkt : lexer cs
+lexer (']':cs)   = TokenLSqBrkt : lexer cs
+lexer ('"':cs)   = TokenQuotation : lexer cs
 
 
 lexNum cs = TokenInt (read num) : lexer rest
@@ -58,4 +69,11 @@ lexVar cs =
       ("let",rest) -> TokenLet : lexer rest
       ("true",rest) -> TokenTrue : lexer rest
       ("false", rest) -> TokenFalse : lexer rest
+      ("==", rest) -> TokenDoubleEqual : lexer rest
+      ("mod", rest) -> TokenMod : lexer rest
+      ("<=", rest) -> TokenLEQ : lexer rest
+      (">=", rest) -> TokenGEQ : lexer rest
+      ("and", rest) -> TokenAnd : lexer rest
+      ("or", rest) -> TokenOr : lexer rest
+      ("not", rest) -> TokenNot : lexer rest
       (var,rest)   -> TokenVar var : lexer rest
