@@ -61,7 +61,7 @@ Exp1 : int            { EInt $1 }
      | Exp1 '>=' Exp1 { EGeq $1 $3 }
      | Exp1 '<=' Exp1 { ELeq $1 $3 }
      | Exp1 'and' Exp1{ EAnd $1 $3 }
-     | Exp1 'or' Exp1 { EAnd $1 $3 }
+     | Exp1 'or' Exp1 { EOr $1 $3 }
      | 'not' Exp1     { ENot $2 }
      | '(' Exp ')'    { EClos $2 }
 
