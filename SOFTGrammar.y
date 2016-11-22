@@ -40,27 +40,45 @@ import SOFTEval
   ']'   { TokenRSqBrkt }
   '"'   { TokenQuotation }
   int   { TokenInt $$ }
-  str   { TokenStr $$ }
+  char   { TokenChar $$ }
 %% 
 
-Exp   : let var '=' Exp   { ENil }
-      | Exp1              { evaluate $1 } 
+Exp     : let var '=' Exp   { ENil }
+        | BOpNum            { evaluate $1 } 
 
-Exp1  : int               { EInt $1 }
-      | str               { EStr $1 }
---    | '(' Exp1 ')'      { Val $2 }
-      | true              { EBool True }
-      | false             { EBool False } 
-      | Exp1 '+' Exp1       { EBinop $1 BAdd $3 }
-      | Exp1 '-' Exp1       { EBinop $1 BSub $3 }
-      | Exp1 '*' Exp1       { EBinop $1 BMul $3 }
-      | Exp1 '/' Exp1       { EBinop $1 BDiv $3 }
-      | Exp1 'mod' Exp1     { EBinop $1 BMod $3 }
-      | Exp1 '==' Exp1      { EBinop $1 BEql $3 }
-      | Exp1 '<' Exp1       { EBinop $1 BLtn $3 }
-      | Exp1 '>' Exp1       { EBinop $1 BGtn $3 }
-      | Exp1 '>=' Exp1      { EBinop $1 BGeq $3 }
-      | Exp1 '<=' Exp1      { EBinop $1 BLeq $3 }
-      | Exp1 'and' Exp1   { EBinop $1 BAnd $3 }
-      | Exp1 'or' Exp1    { EBinop $1 BOr $3 }
-      | 'not' Exp1        { ENot $2 }         
+BOpNum  : Value '+' Value     { EBinop $1 BAdd $3 }
+        | Value '-' Value     { EBinop $1 BSub $3 }
+        | Value '*' Value     { EBinop $1 BMul $3 }
+        | Value '/' Value     { EBinop $1 BDiv $3 }
+        | Value 'mod' Value   { EBinop $1 BMod $3 }
+        | Value '==' Value    { EBinop $1 BEql $3 }
+        | Value '<' Value     { EBinop $1 BLtn $3 }
+        | Value '>' Value     { EBinop $1 BGtn $3 }
+        | Value '>=' Value    { EBinop $1 BGeq $3 }
+        | Value '<=' Value    { EBinop $1 BLeq $3 }
+        | BOpBool           { evaluate $1 }
+
+BOpBool : Value '==' Value    { EBinop $1 BEql $3 }
+        | Value 'and' Value   { EBinop $1 BAnd $3 }
+        | Value 'or' Value    { EBinop $1 BOr $3 }
+        |'not' Value         { ENot $2 }
+        | Value           { evaluate $1 } 
+
+Value   : int               { EInt $1 }
+        | char              { EChar $1 }
+--        | '"' str '"'       { EStr $2 }
+        | Bool           { evaluate $1 }
+
+
+Bool    : true              { EBool True }
+        | false             { EBool False } 
+
+--losure : 
+
+
+--xp1  : int               { EInt $1 }
+ --     | '"' var '"'       { EStr $2 }
+ --     | '(' Exp1 ')'      { evaluate $2 }
+ --     | '[' Exp1 ']'      { }
+ --     | 
+--      |         

@@ -8,7 +8,7 @@ parseError _ = error "Parse Error lol"
 -- Token types --
 data Token
       = TokenInt Int
-      | TokenStr String
+      | TokenChar Char
       | TokenVar String
       | TokenLet
       | TokenTrue
@@ -44,24 +44,25 @@ lexer (c:cs)
       | isSpace c = lexer cs
       | isAlpha c = lexVar (c:cs)
       | isDigit c = lexNum (c:cs)
-lexer ('#':cs)     = TokenComment : lexer cs
-lexer ('+':cs)     = TokenPlus : lexer cs
-lexer ('-':cs)     = TokenMinus : lexer cs
-lexer ('*':cs)     = TokenAsterisk : lexer cs
-lexer ('/':cs)     = TokenFSlash : lexer cs
-lexer ('(':cs)     = TokenLParen : lexer cs
-lexer (')':cs)     = TokenRParen : lexer cs
-lexer ('{':cs)     = TokenLBrace : lexer cs
-lexer ('}':cs)     = TokenRBrace : lexer cs
-lexer ('[':cs)     = TokenLSqBrkt : lexer cs
-lexer (']':cs)     = TokenLSqBrkt : lexer cs
-lexer ('"':cs)     = TokenQuotation : lexer cs
-lexer ('<':'=':cs) = TokenLEQ : lexer cs
-lexer ('>':'=':cs) = TokenGEQ : lexer cs
-lexer ('=':'=':cs) = TokenDoubleEqual : lexer cs
-lexer ('<':cs)     = TokenLT : lexer cs
-lexer ('>':cs)     = TokenGT : lexer cs
-lexer ('=':cs)     = TokenEqual : lexer cs
+lexer ('#':cs)       = TokenComment : lexer cs
+lexer ('+':cs)       = TokenPlus : lexer cs
+lexer ('-':cs)       = TokenMinus : lexer cs
+lexer ('*':cs)       = TokenAsterisk : lexer cs
+lexer ('/':cs)       = TokenFSlash : lexer cs
+lexer ('"':cs)       = TokenQuotation : lexer cs
+lexer ('\'':x:'\'':cs) = TokenChar x : lexer cs
+lexer ('(':cs)       = TokenLParen : lexer cs
+lexer (')':cs)       = TokenRParen : lexer cs
+lexer ('{':cs)       = TokenLBrace : lexer cs
+lexer ('}':cs)       = TokenRBrace : lexer cs
+lexer ('[':cs)       = TokenLSqBrkt : lexer cs
+lexer (']':cs)       = TokenLSqBrkt : lexer cs
+lexer ('<':'=':cs)   = TokenLEQ : lexer cs
+lexer ('>':'=':cs)   = TokenGEQ : lexer cs
+lexer ('=':'=':cs)   = TokenDoubleEqual : lexer cs
+lexer ('<':cs)       = TokenLT : lexer cs
+lexer ('>':cs)       = TokenGT : lexer cs
+lexer ('=':cs)       = TokenEqual : lexer cs
 
 lexNum cs = TokenInt (read num) : lexer rest
       where (num,rest) = span isDigit cs
