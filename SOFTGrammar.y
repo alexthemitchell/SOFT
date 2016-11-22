@@ -40,10 +40,14 @@ import SOFTEval
   ']'   { TokenRSqBrkt }
   '"'   { TokenQuotation }
   int   { TokenInt $$ }
-  char   { TokenChar $$ }
+  char  { TokenChar $$ }
+  ','   { TokenComma }
 %% 
 
 Exp     : let var '=' Exp   { ENil }
+        | Closure           { evaluate $1 }
+
+Closure : '(' Exp ')'       { evaluate $2 }
         | BOpNum            { evaluate $1 } 
 
 BOpNum  : Value '+' Value     { EBinop $1 BAdd $3 }
@@ -66,19 +70,7 @@ BOpBool : Value '==' Value    { EBinop $1 BEql $3 }
 
 Value   : int               { EInt $1 }
         | char              { EChar $1 }
---        | '"' str '"'       { EStr $2 }
         | Bool           { evaluate $1 }
-
 
 Bool    : true              { EBool True }
         | false             { EBool False } 
-
---losure : 
-
-
---xp1  : int               { EInt $1 }
- --     | '"' var '"'       { EStr $2 }
- --     | '(' Exp1 ')'      { evaluate $2 }
- --     | '[' Exp1 ']'      { }
- --     | 
---      |         
