@@ -9,6 +9,7 @@ data Bop =
 data Exp where
   --Types
   EInt  :: Int -> Exp
+  EFlt  :: Float -> Exp 
   EBool :: Bool -> Exp
   EChar :: Char -> Exp
   EStr  :: String -> Exp
@@ -40,6 +41,7 @@ data Exp where
 
 instance Show Exp where
     show (EInt n)  = show n
+    show (EFlt f)  = show f
     show (EBool b) = show b
     show (EChar c) = [c] 
     show (EStr s)  = s
@@ -68,6 +70,7 @@ instance Show Exp where
 
 value :: Exp -> Bool 
 value (EInt _)        = True
+value (EFlt _)        = True
 value (EBool _)       = True
 value (EChar _)       = True
 value (EStr _)        = True
@@ -82,6 +85,7 @@ value _           = False
      
 step :: Exp -> Exp 
 step (EInt  n) = EInt n
+step (EFlt  f) = EFlt f
 step (EBool b) = EBool b
 step (EChar c) = EChar c
 step (EStr  s) = EStr s
@@ -94,16 +98,21 @@ step (EBinop e1 op e2)
   | otherwise      =
      case (e1, op ,e2) of
        (EInt n1, BAdd, EInt n2) -> EInt  $ n1 + n2 
-       ( _     , BAdd, _      ) -> EErr  $ "+ takes int, int"
-       (EInt n1, BSub, EInt n2) -> EInt  $ n1 - n2      
-       ( _     , BSub, _      ) -> EErr  $ "- takes int, int"
-       (EInt n1, BMul, EInt n2) -> EInt  $ n1 * n2 
-       ( _     , BMul, _      ) -> EErr  $ "* takes int, int"
+       (EFlt f1, BAdd, EFlt f2) -> EFlt  $ f1 + f2
+       ( _     , BAdd, _      ) -> EErr  $ "+ takes ints or floats"
+       (EInt n1, BSub, EInt n2) -> EInt  $ n1 - n2     
+       (EFlt f1, BSub, EFlt f2) -> EFlt  $ f1 - f2
+       ( _     , BSub, _      ) -> EErr  $ "- takes ints or floats"
+       (EInt n1, BMul, EInt n2) -> EInt  $ n1 * n2
+       (EFlt f1, BMul, EFlt f2) -> EFlt  $ f1 * f2
+       ( _     , BMul, _      ) -> EErr  $ "* takes ints or floats"
        (EInt n1, BDiv, EInt n2) -> EInt  $ n1 `div` n2 
-       ( _     , BDiv, _      ) -> EErr  $ "/ takes int, int"
+       (EFlt f1, BDiv, EFlt f2) -> EFlt  $ f1 / f2
+       ( _     , BDiv, _      ) -> EErr  $ "/ takes ints or floats"
        (EInt n1, BMod, EInt n2) -> EInt  $ n1 `mod` n2      
        ( _     , BMod, _      ) -> EErr  $ "mod takes int, int"
        (EInt n1, BEql, EInt n2) -> EBool $ n1 == n2
+       (EFlt f1, BEql, EFlt f2) -> EFlt  $ f1 == f2
        (EBool b1, BEql, EBool b2) -> EBool $ b1 == b2
        (EStr s1, BEql,EStr s2) -> EBool    $ s1 == s2
        (EChar c1, BEql, EChar c2) -> EBool $ c1 == c2
