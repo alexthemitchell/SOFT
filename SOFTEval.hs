@@ -37,6 +37,7 @@ data Exp where
   EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
   --General Operations  
   EApp  :: String -> [Exp] -> Exp --Applies given function to expression  
+ -- EApp  :: Exp -> [Exp] -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc. 
 
 type Env = [(String, Exp)]
@@ -48,6 +49,7 @@ instance Show Exp where
     show (EBool b) = show b
     show (EChar c) = [c] 
     show (EStr s)  = s
+    show (ELst (x:xs)) = show x ++ show xs
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) = 
      case op of
@@ -79,13 +81,23 @@ value (EChar _)       = True
 value (EStr _)        = True
 value (ELst l)        = all value l --all :: (a -> Bool) -> [a] -> Bool
 value (EErr _)        = True
-value (EVar _)        = True
+value (EVar _)        = False
 value (EClos _)       = True
 value (EFunc _ _ _ _) = True
 value (ELet _ _ _)    = True
 value _           = False
 
-step ::Env ->  Exp -> (Exp, Env)     
+find :: Exp -> Env -> Exp
+find (EVar _) []       = EErr "Variable has not been declared"
+find (EApp _ _) []       = EErr "Function has not been declared"
+find (EVar s) ((s1, v1):xs) 
+  | s == s1   = v1
+  | otherwise = find (EVar s) xs
+find (EApp s l) ((s1, f1):(s2, f2):xs)
+  | s == s1   = f1 
+  | otherwise = find (EApp s l) ((s2, f2):xs)  
+
+step :: Env ->  Exp -> (Exp, Env)     
 step e (EInt  n) = (EInt n, e)
 step e (EFlt  f) = (EFlt f, e)
 step e (EBool b) = (EBool b, e)
@@ -93,7 +105,7 @@ step e (EChar c) = (EChar c, e)
 step e (EStr  s) = (EStr s, e)
 step e (ELst  l) = (ELst l, e)
 step v (EErr  e) = (EErr e, v)  
---step (EVar  s) = EVar s
+step e (EVar  s) = step e (find (EVar s) e) --do we take the variable out of envstack??
 step e (EBinop e1 op e2) 
   | not $ value e1 = (EBinop (fst $ step e e1) op e2, e) 
   | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
@@ -144,7 +156,7 @@ step e (EFst l)
       (ELst (x:_)) -> step e x
       _            -> (EErr $ "first takes a list", e)
 step e (ERst l) 
-  | not $ value l = (ELst (fst $ step e l), e)
+  | not $ value l = (ELst [(fst $ step e l)], e)
   | otherwise     =
      case l of 
       (ELst (_:xs)) -> (ELst $ xs, e) 
@@ -164,32 +176,32 @@ step e (ECons v l)
       ENil     -> (ELst $ v: [], e)
       _        -> (EErr "cons takes a value and a list", e)
 step e ENil = (ELst $ [], e)
-{--
-step (EApp e1 e2)
-  | not $ value e1 = EApp (step e1) e2
-  | not $ value e2 = EApp e1 (step e2)
-  | otherwise      =
-    case e1 of
-     (ELet s v e1)     -> subst s v e1 
-     (EFunc s l s1 s2) -> subst s v s2
-     
-step (ELet s v e1)
-  | not $ value v  = ELet (step v) e1
-  | not $ value e1 = ELet v (step e1)
-  | otherwise      =
-    case 
-step EFunc s (x:xs) e1 e2
-  
-subst :: String -> Exp -> Exp -> Exp
-subst x v (EAdd ) = 
---}
+step e (EApp s l) = step e (find (EApp s l) e) 
+--call for variable declaration     
+step e (ELet s v e1)
+  | value v        = step ((s,v):e) e1
+  | otherwise      = 
+     case v of
+      (ELet _ _ _)    -> (EErr "cannot assign variable to another variable declaration", e)
+      (EFunc _ _ _ _) -> (EErr "cannot assign variable to a function declaration", e)
+      _               -> (ELet s (fst $ step e v) e1, e)
+--call for function declaration
+step e (EFunc s l e1 e2)
+  | value e1  = (EErr $ "cannot assign function to value", e)
+  | value e2  = (EErr $ "cannot call function in a value", e)
+  | otherwise = step (addR l ((s, e1):e)) e2
+
+addR :: [String] -> Env -> Env
+addR [] e = e
+addR (x:xs) e = addR xs ((x, ENil):e) 
 {--
   let x = 5 in x + 1
   ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
 
   let f(x) = x+1 in f(0)
   EFunc f [x] (EAdd (EVar "x") (EInt 1)) (EApp f [0]))  
-
+  EFun  :: String -> [Exp] -> Exp
+  EApp  :: Exp -> [Exp] -> Exp     
   ELet  :: String -> Exp -> Exp -> Exp -- let x = e1 in e2
   EVar  :: String -> Exp --x 
   EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
