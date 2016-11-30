@@ -93,9 +93,9 @@ find (EApp _ _) []       = EErr "Function has not been declared"
 find (EVar s) ((s1, v1):xs) 
   | s == s1   = v1
   | otherwise = find (EVar s) xs
-find (EApp s l) ((s1, f1):(s2, f2):xs)
+find (EApp s l) ((s1, f1):xs)
   | s == s1   = f1 
-  | otherwise = find (EApp s l) ((s2, f2):xs)  
+  | otherwise = find (EApp s l) ((s2, f2):xs) 
 
 step :: Env ->  Exp -> (Exp, Env)     
 step e (EInt  n) = (EInt n, e)
@@ -176,7 +176,7 @@ step e (ECons v l)
       ENil     -> (ELst $ v: [], e)
       _        -> (EErr "cons takes a value and a list", e)
 step e ENil = (ELst $ [], e)
-step e (EApp s l) = step e (find (EApp s l) e) 
+step e (EApp s l) = step (addV s l e) (find (EApp s l) e) 
 --call for variable declaration     
 step e (ELet s v e1)
   | value v        = step ((s,v):e) e1
@@ -189,11 +189,15 @@ step e (ELet s v e1)
 step e (EFunc s l e1 e2)
   | value e1  = (EErr $ "cannot assign function to value", e)
   | value e2  = (EErr $ "cannot call function in a value", e)
-  | otherwise = step (addR l ((s, e1):e)) e2
+  | otherwise = step (addS l ((s, e1):e)) e2
 
-addR :: [String] -> Env -> Env
-addR [] e = e
-addR (x:xs) e = addR xs ((x, ENil):e) 
+addS :: [String] -> Env -> Env
+addS [] e = e
+addS (x:xs) e = addR xs ((x, ENil):e) 
+
+addV :: [Exp] -> Env -> Env
+addV [] e = e
+addV (x:xs) ((s, v):e) = addV xs ((s, x):e)
 {--
   let x = 5 in x + 1
   ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
