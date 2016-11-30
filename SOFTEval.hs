@@ -39,6 +39,9 @@ data Exp where
   EApp  :: String -> [Exp] -> Exp --Applies given function to expression  
   EClos :: Exp -> Exp --For parenthesis, brackets etc. 
 
+type Env = [(String, Exp)]
+type EnvStack = [Env]
+
 instance Show Exp where
     show (EInt n)  = show n
     show (EFlt f)  = show f
@@ -81,87 +84,86 @@ value (EClos _)       = True
 value (EFunc _ _ _ _) = True
 value (ELet _ _ _)    = True
 value _           = False
---Env ->  Exp -> (Exp, Env)
-     
-step :: Exp -> Exp 
-step (EInt  n) = EInt n
-step (EFlt  f) = EFlt f
-step (EBool b) = EBool b
-step (EChar c) = EChar c
-step (EStr  s) = EStr s
-step (ELst  l) = ELst l
-step (EErr  e) = EErr e  
-step (EVar  s) = EVar s
-step (EBinop e1 op e2) 
-  | not $ value e1 = EBinop (step e1) op e2 
-  | not $ value e2 = EBinop e1 op (step e2)
+
+step ::Env ->  Exp -> (Exp, Env)     
+step e (EInt  n) = (EInt n, e)
+step e (EFlt  f) = (EFlt f, e)
+step e (EBool b) = (EBool b, e)
+step e (EChar c) = (EChar c, e)
+step e (EStr  s) = (EStr s, e)
+step e (ELst  l) = (ELst l, e)
+step v (EErr  e) = (EErr e, v)  
+--step (EVar  s) = EVar s
+step e (EBinop e1 op e2) 
+  | not $ value e1 = (EBinop (step e e1) op e2, e) 
+  | not $ value e2 = (EBinop e1 op (step e e2), e)
   | otherwise      =
      case (e1, op ,e2) of
-       (EInt n1, BAdd, EInt n2) -> EInt  $ n1 + n2 
-       (EFlt f1, BAdd, EFlt f2) -> EFlt  $ f1 + f2
-       ( _     , BAdd, _      ) -> EErr  $ "+ takes ints or floats"
-       (EInt n1, BSub, EInt n2) -> EInt  $ n1 - n2     
-       (EFlt f1, BSub, EFlt f2) -> EFlt  $ f1 - f2
-       ( _     , BSub, _      ) -> EErr  $ "- takes ints or floats"
-       (EInt n1, BMul, EInt n2) -> EInt  $ n1 * n2
-       (EFlt f1, BMul, EFlt f2) -> EFlt  $ f1 * f2
-       ( _     , BMul, _      ) -> EErr  $ "* takes ints or floats"
-       (EInt n1, BDiv, EInt n2) -> EInt  $ n1 `div` n2 
-       (EFlt f1, BDiv, EFlt f2) -> EFlt  $ f1 / f2
-       ( _     , BDiv, _      ) -> EErr  $ "/ takes ints or floats"
-       (EInt n1, BMod, EInt n2) -> EInt  $ n1 `mod` n2      
-       ( _     , BMod, _      ) -> EErr  $ "mod takes int, int"
-       (EInt n1, BEql, EInt n2) -> EBool $ n1 == n2
-       (EFlt f1, BEql, EFlt f2) -> EFlt  $ f1 == f2
-       (EBool b1, BEql, EBool b2) -> EBool $ b1 == b2
-       (EStr s1, BEql,EStr s2) -> EBool    $ s1 == s2
-       (EChar c1, BEql, EChar c2) -> EBool $ c1 == c2
-       ( _     , BEql, _      ) -> EErr  $ "== takes two of the same type" 
-       (EInt n1, BLtn, EInt n2) -> EBool $ n1 < n2 
-       ( _     , BLtn, _      ) -> EErr  $ "< takes int, int"
-       (EInt n1, BGtn, EInt n2) -> EBool $ n1 > n2      
-       ( _     , BGtn, _      ) -> EErr  $ "> takes int, int"
-       (EInt n1, BLeq, EInt n2) -> EBool $ n1 <= n2 
-       ( _     , BLeq, _      ) -> EErr  $ "<= takes int, int"
-       (EInt n1, BGeq, EInt n2) -> EBool $ n1 >= n2 
-       ( _     , BGeq, _      ) -> EErr  $ ">= takes int, int"
-       (EBool b1, BAnd, EBool b2) -> EBool $ b1 && b2      
-       ( _      , BAnd, _      ) -> EErr  $ "and takes bool, bool"
-       (EBool b1, BOr , EBool b2) -> EBool $ b1 || b2 
-       ( _      , BOr , _      ) -> EErr  $ "or takes bool, bool"
-step (ENot b)             
-  |not $ value b = ENot (step b)
+       (EInt n1, BAdd, EInt n2) -> (EInt  $ n1 + n2, e) 
+       (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2, e)
+       ( _     , BAdd, _      ) -> (EErr  $ "+ takes ints or floats", e)
+       (EInt n1, BSub, EInt n2) -> (EInt  $ n1 - n2, e)     
+       (EFlt f1, BSub, EFlt f2) -> (EFlt  $ f1 - f2, e)
+       ( _     , BSub, _      ) -> (EErr  $ "- takes ints or floats", e)
+       (EInt n1, BMul, EInt n2) -> (EInt  $ n1 * n2, e)
+       (EFlt f1, BMul, EFlt f2) -> (EFlt  $ f1 * f2, e)
+       ( _     , BMul, _      ) -> (EErr  $ "* takes ints or floats", e)
+       (EInt n1, BDiv, EInt n2) -> (EInt  $ n1 `div` n2, e) 
+       (EFlt f1, BDiv, EFlt f2) -> (EFlt  $ f1 / f2, e)
+       ( _     , BDiv, _      ) -> (EErr  $ "/ takes ints or floats", e)
+       (EInt n1, BMod, EInt n2) -> (EInt  $ n1 `mod` n2, e)      
+       ( _     , BMod, _      ) -> (EErr  $ "mod takes int, int", e)
+       (EInt n1, BEql, EInt n2) -> (EBool $ n1 == n2, e)
+       (EFlt f1, BEql, EFlt f2) -> (EBool  $ f1 == f2, e)
+       (EBool b1, BEql, EBool b2) -> (EBool $ b1 == b2, e)
+       (EStr s1, BEql, EStr s2)   -> (EBool  $ s1 == s2, e)
+       (EChar c1, BEql, EChar c2) -> (EBool $ c1 == c2, e)
+       ( _     , BEql, _      ) -> (EErr  $ "== takes two of the same type", e) 
+       (EInt n1, BLtn, EInt n2) -> (EBool $ n1 < n2, e) 
+       ( _     , BLtn, _      ) -> (EErr  $ "< takes int, int", e)
+       (EInt n1, BGtn, EInt n2) -> (EBool $ n1 > n2, e)      
+       ( _     , BGtn, _      ) -> (EErr  $ "> takes int, int", e)
+       (EInt n1, BLeq, EInt n2) -> (EBool $ n1 <= n2, e) 
+       ( _     , BLeq, _      ) -> (EErr  $ "<= takes int, int", e)
+       (EInt n1, BGeq, EInt n2) -> (EBool $ n1 >= n2, e) 
+       ( _     , BGeq, _      ) -> (EErr  $ ">= takes int, int", e)
+       (EBool b1, BAnd, EBool b2) -> (EBool $ b1 && b2, e)      
+       ( _      , BAnd, _      ) -> (EErr  $ "and takes bool, bool", e)
+       (EBool b1, BOr , EBool b2) -> (EBool $ b1 || b2, e) 
+       ( _      , BOr , _      ) -> (EErr  $ "or takes bool, bool", e)
+step e (ENot b)             
+  |not $ value b = (ENot (step e b), e)
   |otherwise     = 
      case b of 
-       (EBool b1) -> EBool $ not b1
-       _          -> EErr $ "not takes bool"
-step (EFst l)     
-  | not $ value l = EFst (step l)
+       (EBool b1) -> (EBool $ not b1, e)
+       _          -> (EErr $ "not takes bool", e)
+step e (EFst l)     
+  | not $ value l = (EFst (step e l), e)
   | otherwise     =
      case l of 
-      (ELst (x:_)) -> step x
-      _            -> EErr $ "first takes a list"
-step (ERst l) 
-  | not $ value l = EFst (step l)
+      (ELst (x:_)) -> step e x
+      _            -> (EErr $ "first takes a list", e)
+step e (ERst l) 
+  | not $ value l = (ELst (step e l), e)
   | otherwise     =
      case l of 
-      (ELst (_:xs)) -> ELst $ xs 
-      _             -> EErr $ "rest takes a list"
-step (EEmt l) 
-  |not $ value l = EEmt (step l)
+      (ELst (_:xs)) -> (ELst $ xs, e) 
+      _             -> (EErr $ "rest takes a list", e)
+step e (EEmt l) 
+  |not $ value l = (EEmt (step e l), e)
   |otherwise     =
     case l of 
-     ENil -> EBool True
-     _    -> EBool False
-step (ECons v l)
-  |not $ value v = ECons (step v) l
-  |not $ value l = ECons v (step l)
+     ENil -> (EBool True, e)
+     _    -> (EBool False, e)
+step e (ECons v l)
+  |not $ value v = (ECons (fst $ step e v) l, e)
+  |not $ value l = (ECons v (fst $ step e l), e)
   |otherwise     =
     case l of 
-      (ELst l) -> ELst $ v:l
-      ENil     -> ELst $ v: []
-      _        -> EErr "cons takes a value and a list"
-step ENil = ELst $ []
+      (ELst l) -> (ELst $ v:l, e)
+      ENil     -> (ELst $ v: [], e)
+      _        -> (EErr "cons takes a value and a list", e)
+step e ENil = (ELst $ [], e)
 {--
 step (EApp e1 e2)
   | not $ value e1 = EApp (step e1) e2
@@ -194,5 +196,5 @@ subst x v (EAdd ) =
 --}
 evaluate :: Exp -> Exp
 evaluate e 
-  | not $ value e = evaluate (step e)
+  | not $ value e = evaluate $ fst (step [] e)
   | otherwise     =  e
