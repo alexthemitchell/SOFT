@@ -13,6 +13,7 @@ import SOFTEval
 %error { parseError }
 
 %token
+  nil   { TokenNil }
   let   { TokenLet }
   var   { TokenVar $$ }
   true  { TokenTrue }
@@ -50,27 +51,28 @@ Exp     : let var '=' Exp   { ENil }
 Closure : '(' Exp ')'       { evaluate $2 }
         | BOpNum            { evaluate $1 } 
 
-BOpNum  : Value '+' Value     { EBinop $1 BAdd $3 }
-        | Value '-' Value     { EBinop $1 BSub $3 }
-        | Value '*' Value     { EBinop $1 BMul $3 }
-        | Value '/' Value     { EBinop $1 BDiv $3 }
-        | Value 'mod' Value   { EBinop $1 BMod $3 }
-        | Value '==' Value    { EBinop $1 BEql $3 }
-        | Value '<' Value     { EBinop $1 BLtn $3 }
-        | Value '>' Value     { EBinop $1 BGtn $3 }
-        | Value '>=' Value    { EBinop $1 BGeq $3 }
-        | Value '<=' Value    { EBinop $1 BLeq $3 }
+BOpNum  : Value '+' Value   { EBinop $1 BAdd $3 }
+        | Value '-' Value   { EBinop $1 BSub $3 }
+        | Value '*' Value   { EBinop $1 BMul $3 }
+        | Value '/' Value   { EBinop $1 BDiv $3 }
+        | Value 'mod' Value { EBinop $1 BMod $3 }
+        | Value '==' Value  { EBinop $1 BEql $3 }
+        | Value '<' Value   { EBinop $1 BLtn $3 }
+        | Value '>' Value   { EBinop $1 BGtn $3 }
+        | Value '>=' Value  { EBinop $1 BGeq $3 }
+        | Value '<=' Value  { EBinop $1 BLeq $3 }
         | BOpBool           { evaluate $1 }
 
-BOpBool : Value '==' Value    { EBinop $1 BEql $3 }
-        | Value 'and' Value   { EBinop $1 BAnd $3 }
-        | Value 'or' Value    { EBinop $1 BOr $3 }
-        |'not' Value         { ENot $2 }
-        | Value           { evaluate $1 } 
+BOpBool : Value '==' Value  { EBinop $1 BEql $3 }
+        | Value 'and' Value { EBinop $1 BAnd $3 }
+        | Value 'or' Value  { EBinop $1 BOr $3 }
+        |'not' Value        { ENot $2 }
+        | Value             { evaluate $1 } 
 
 Value   : int               { EInt $1 }
         | char              { EChar $1 }
-        | Bool           { evaluate $1 }
+        | Bool              { evaluate $1 }
+        | nil               { ENil }
 
 Bool    : true              { EBool True }
         | false             { EBool False } 

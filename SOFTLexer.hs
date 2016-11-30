@@ -10,6 +10,7 @@ data Token
       = TokenInt Int
       | TokenChar Char
       | TokenVar String
+      | TokenNil
       | TokenLet
       | TokenTrue
       | TokenFalse
@@ -71,6 +72,7 @@ lexNum cs = TokenInt (read num) : lexer rest
 
 lexVar cs =
    case span isAlpha cs of
+      ("nil",rest)    -> TokenNil : lexer rest
       ("let",rest)    -> TokenLet : lexer rest
       ("true",rest)   -> TokenTrue : lexer rest
       ("false", rest) -> TokenFalse : lexer rest

@@ -49,6 +49,7 @@ instance Show Exp where
     show (EBool b) = show b
     show (EChar c) = [c] 
     show (EStr s)  = s
+    show (ELst []) = "nil" 
     show (ELst (x:xs)) = show x ++ show xs
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) = 
@@ -67,8 +68,8 @@ instance Show Exp where
       BOr  -> (show e1) ++ " or "  ++ (show e2)
     show (ENot e)     = "not " ++ (show e)
     show (EFst l)     = "first " ++ (show l)
+    show ENil         = "nil"
     show (ERst l)     = "[" ++ (show l) ++ "]"
-    show ENil         = "[]"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)         
 
