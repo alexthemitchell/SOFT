@@ -95,7 +95,7 @@ find (EVar s) ((s1, v1):xs)
   | otherwise = find (EVar s) xs
 find (EApp s l) ((s1, f1):xs)
   | s == s1   = f1 
-  | otherwise = find (EApp s l) ((s2, f2):xs) 
+  | otherwise = find (EApp s l) xs 
 
 step :: Env ->  Exp -> (Exp, Env)     
 step e (EInt  n) = (EInt n, e)
@@ -105,7 +105,7 @@ step e (EChar c) = (EChar c, e)
 step e (EStr  s) = (EStr s, e)
 step e (ELst  l) = (ELst l, e)
 step v (EErr  e) = (EErr e, v)  
-step e (EVar  s) = step e (find (EVar s) e) --do we take the variable out of envstack??
+step e (EVar  s) = step e (find (EVar s) e) 
 step e (EBinop e1 op e2) 
   | not $ value e1 = (EBinop (fst $ step e e1) op e2, e) 
   | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
@@ -176,7 +176,7 @@ step e (ECons v l)
       ENil     -> (ELst $ v: [], e)
       _        -> (EErr "cons takes a value and a list", e)
 step e ENil = (ELst $ [], e)
-step e (EApp s l) = step (addV s l e) (find (EApp s l) e) 
+step e (EApp s l) = step (addV l e) (find (EApp s l) e) 
 --call for variable declaration     
 step e (ELet s v e1)
   | value v        = step ((s,v):e) e1
@@ -193,7 +193,7 @@ step e (EFunc s l e1 e2)
 
 addS :: [String] -> Env -> Env
 addS [] e = e
-addS (x:xs) e = addR xs ((x, ENil):e) 
+addS (x:xs) e = addS xs ((x, ENil):e) 
 
 addV :: [Exp] -> Env -> Env
 addV [] e = e
