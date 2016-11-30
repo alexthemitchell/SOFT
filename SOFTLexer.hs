@@ -10,6 +10,7 @@ data Token
       = TokenInt Int
       | TokenChar Char
       | TokenVar String
+      | TokenFunction
       | TokenNil
       | TokenLet
       | TokenTrue
@@ -80,4 +81,5 @@ lexVar cs =
       ("and", rest)   -> TokenAnd : lexer rest
       ("or", rest)    -> TokenOr : lexer rest
       ("not", rest)   -> TokenNot : lexer rest
+      ("function", rest) -> TokenFunction : lexer rest
       (var,rest)      -> TokenVar var : lexer rest
