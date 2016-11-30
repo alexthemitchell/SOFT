@@ -45,7 +45,7 @@ import SOFTEval
   ','   { TokenComma }
 %% 
 
-Exp     : let var '=' Exp   { ENil }
+Exp     : let var '=' Exp   { evaluate $ ELet $2 $4 }
         | Closure           { evaluate $1 }
 
 Closure : '(' Exp ')'       { evaluate $2 }
