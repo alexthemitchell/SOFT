@@ -46,6 +46,7 @@ import SOFTEval
 %% 
 
 Exp     : let var '=' Exp   { evaluate $ ELet $2 $4 }
+        | var               { evaluate $ EVar $1 }
         | Closure           { evaluate $1 }
 
 Closure : '(' Exp ')'       { evaluate $2 }
