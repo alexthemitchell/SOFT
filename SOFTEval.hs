@@ -95,8 +95,8 @@ step e (ELst  l) = (ELst l, e)
 step v (EErr  e) = (EErr e, v)  
 --step (EVar  s) = EVar s
 step e (EBinop e1 op e2) 
-  | not $ value e1 = (EBinop (step e e1) op e2, e) 
-  | not $ value e2 = (EBinop e1 op (step e e2), e)
+  | not $ value e1 = (EBinop (fst $ step e e1) op e2, e) 
+  | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
   | otherwise      =
      case (e1, op ,e2) of
        (EInt n1, BAdd, EInt n2) -> (EInt  $ n1 + n2, e) 
@@ -132,25 +132,25 @@ step e (EBinop e1 op e2)
        (EBool b1, BOr , EBool b2) -> (EBool $ b1 || b2, e) 
        ( _      , BOr , _      ) -> (EErr  $ "or takes bool, bool", e)
 step e (ENot b)             
-  |not $ value b = (ENot (step e b), e)
+  |not $ value b = (ENot (fst $ step e b), e)
   |otherwise     = 
      case b of 
        (EBool b1) -> (EBool $ not b1, e)
        _          -> (EErr $ "not takes bool", e)
 step e (EFst l)     
-  | not $ value l = (EFst (step e l), e)
+  | not $ value l = (EFst (fst $ step e l), e)
   | otherwise     =
      case l of 
       (ELst (x:_)) -> step e x
       _            -> (EErr $ "first takes a list", e)
 step e (ERst l) 
-  | not $ value l = (ELst (step e l), e)
+  | not $ value l = (ELst (fst $ step e l), e)
   | otherwise     =
      case l of 
       (ELst (_:xs)) -> (ELst $ xs, e) 
       _             -> (EErr $ "rest takes a list", e)
 step e (EEmt l) 
-  |not $ value l = (EEmt (step e l), e)
+  |not $ value l = (EEmt (fst $ step e l), e)
   |otherwise     =
     case l of 
      ENil -> (EBool True, e)
