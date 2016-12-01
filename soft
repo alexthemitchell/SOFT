@@ -1,2 +1,2 @@
 #!/bin/bash
-make && runhaskell REPL.hs
+make && runhaskell SOFTRun.hs
