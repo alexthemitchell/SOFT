@@ -13,44 +13,50 @@ import SOFTEval
 %error { parseError }
 
 %token
-  nil   { TokenNil }
-  let   { TokenLet }
-  var   { TokenVar $$ }
-  true  { TokenTrue }
-  false { TokenFalse }
-  '#'   { TokenComment }
-  '='   { TokenEqual }
-  '=='  { TokenDoubleEqual }
-  '+'   { TokenPlus } 
-  '-'   { TokenMinus}
-  '*'   { TokenAsterisk }
-  'mod' { TokenMod }
-  '<'   { TokenLT }
-  '>'   { TokenGT }
-  '<='  { TokenLEQ }
-  '>='  { TokenGEQ }
-  'and' { TokenAnd }
-  'or'  { TokenOr  }
-  'not' { TokenNot }
-  '/'   { TokenFSlash }
-  '('   { TokenLParen }
-  ')'   { TokenRParen }
-  '{'   { TokenLBrace }
-  '}'   { TokenRBrace }
-  '['   { TokenLSqBrkt }
-  ']'   { TokenRSqBrkt }
-  '"'   { TokenQuotation }
-  int   { TokenInt $$ }
-  char  { TokenChar $$ }
-  ','   { TokenComma }
+  nil       { TokenNil }
+  let       { TokenLet }
+  function  { TokenFunction }
+  var       { TokenVar $$ }
+  true      { TokenTrue }
+  false     { TokenFalse }
+  '#'       { TokenComment }
+  '='       { TokenEqual }
+  '=='      { TokenDoubleEqual }
+  '+'       { TokenPlus } 
+  '-'       { TokenMinus}
+  '*'       { TokenAsterisk }
+  'mod'     { TokenMod }
+  '<'       { TokenLT }
+  '>'       { TokenGT }
+  '<='      { TokenLEQ }
+  '>='      { TokenGEQ }
+  'and'     { TokenAnd }
+  'or'      { TokenOr  }
+  'not'     { TokenNot }
+  '/'       { TokenFSlash }
+  '('       { TokenLParen }
+  ')'       { TokenRParen }
+  '{'       { TokenLBrace }
+  '}'       { TokenRBrace }
+  '['       { TokenLSqBrkt }
+  ']'       { TokenRSqBrkt }
+  '"'       { TokenQuotation }
+  int       { TokenInt $$ }
+  char      { TokenChar $$ }
+  ','       { TokenComma }
 %% 
 
-Exp     : let var '=' Exp   { evaluate $ ELet $2 $4 }
-        | var               { evaluate $ EVar $1 }
-        | Closure           { evaluate $1 }
+Exp     : let var '=' Exp                     { evaluate $ ELet $2 $4 }
+        | function var '(' Parameters ')' '{' Exp '}' { evaluate $ EFunc $2 $4 $7 }
+        | var                                 { evaluate $ EVar $1 }
+        | Closure                             { evaluate $1 }
 
-Closure : '(' Exp ')'       { evaluate $2 }
-        | BOpNum            { evaluate $1 } 
+Closure : '(' Exp ')'                         { evaluate $2 }
+        | BOpNum                              { evaluate $1 } 
+
+Parameters : Parameters ',' Value  { $3 : $1 }
+           | Value                 { [$1] }
+           | {- empty -}              { [] }
 
 BOpNum  : Value '+' Value   { EBinop $1 BAdd $3 }
         | Value '-' Value   { EBinop $1 BSub $3 }

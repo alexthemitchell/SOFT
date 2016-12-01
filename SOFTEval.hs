@@ -32,9 +32,9 @@ data Exp where
   let f(x) = x+1 in f(0)
   EFunc f [x] (EAdd (EVar "x") (EInt 1)) (EApp f [0]))  
 --}
-  ELet  :: String -> Exp -> Exp -- let x = e1 in e2
+  ELet  :: String -> Exp -> Exp -- let x = e1
   EVar  :: String -> Exp --x 
-  EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
+  EFunc :: String -> [Exp] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations  
   EApp  :: String -> [Exp] -> Exp --Applies given function to expression  
  -- EApp  :: Exp -> [Exp] -> Exp
@@ -85,7 +85,7 @@ value (ELst l)        = all value l --all :: (a -> Bool) -> [a] -> Bool
 value (EErr _)        = True
 value (EVar _)        = False
 value (EClos _)       = True
-value (EFunc _ _ _ _) = True
+value (EFunc _ _ _) = True
 value (ELet _ _)    = True
 value _           = False
 
@@ -185,13 +185,12 @@ step e (ELet s v)
   | otherwise      = 
      case v of
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e)
-      (EFunc _ _ _ _) -> (EErr "cannot assign variable to a function declaration", e)
+      (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e)
       _               -> (ELet s (fst $ step e v) , e)
 --call for function declaration
-step e (EFunc s l e1 e2)
+step e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e)
-  | value e2  = (EErr $ "cannot call function in a value", e)
-  | otherwise = step (addS l ((s, e1):e)) e2
+  | otherwise = step ((s,e1):e) ENil
 
 addS :: [String] -> Env -> Env
 addS [] e = e
