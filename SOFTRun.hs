@@ -14,7 +14,10 @@ until_ pred prompt action = do
 main :: IO ()
 main = do args <- getArgs
           case length args of
-            1 -> evalAndPrint $ args !! 0
+            1 -> do 
+              code <- readFile $ args !! 0
+              let loc = lines code
+              runCode loc 
             otherwise -> runRepl
 
 flushStr :: String -> IO ()
@@ -29,5 +32,9 @@ evalAndPrint input = print . parse . lexer $ input
 runRepl :: IO ()
 runRepl = until_ (== "quit") (readPrompt ">> ") evalAndPrint
 
-
+runCode :: [String] -> IO ()
+runCode [x] = evalAndPrint x 
+runCode (x:xs) = do
+  evalAndPrint x
+  runCode xs
 
