@@ -54,8 +54,8 @@ Exp     : let var '=' Exp                     { evaluate $ ELet $2 $4 }
 Closure : '(' Exp ')'                         { evaluate $2 }
         | BOpNum                              { evaluate $1 } 
 
-Parameters : Parameters ',' Value  { $3 : $1 }
-           | Value                 { [$1] }
+Parameters : Parameters ',' var  { $3 : $1 }
+           | var                 { [$1] }
            | {- empty -}              { [] }
 
 BOpNum  : Value '+' Value   { EBinop $1 BAdd $3 }

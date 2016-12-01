@@ -34,7 +34,7 @@ data Exp where
 --}
   ELet  :: String -> Exp -> Exp -- let x = e1
   EVar  :: String -> Exp --x 
-  EFunc :: String -> [Exp] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
+  EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations  
   EApp  :: String -> [Exp] -> Exp --Applies given function to expression  
  -- EApp  :: Exp -> [Exp] -> Exp
