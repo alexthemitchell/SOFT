@@ -47,7 +47,7 @@ instance Show Exp where
     show (EInt n)  = show n
     show (EFlt f)  = show f
     show (EBool b) = show b
-    show (ELet n v) = show n ++ " is " ++ show v
+    show (ELet n v)= show n ++ " is " ++ show v
     show (EChar c) = [c] 
     show (EStr s)  = s
     show (ELst []) = "nil" 
@@ -73,7 +73,7 @@ instance Show Exp where
     show (ERst l)     = "[" ++ (show l) ++ "]"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)         
-    show (EFunc s p _)    = show s ++ " declared with parameters " ++ show p
+    show (EFunc s p _)    = "Function " ++ show s ++ " declared with parameters " ++ show p
 
 
 value :: Exp -> Bool 
