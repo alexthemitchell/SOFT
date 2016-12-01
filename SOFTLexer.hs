@@ -59,7 +59,7 @@ lexer (')':cs)         = TokenRParen : lexer cs
 lexer ('{':cs)         = TokenLBrace : lexer cs
 lexer ('}':cs)         = TokenRBrace : lexer cs
 lexer ('[':cs)         = TokenLSqBrkt : lexer cs
-lexer (']':cs)         = TokenLSqBrkt : lexer cs
+lexer (']':cs)         = TokenRSqBrkt : lexer cs
 lexer ('<':'=':cs)     = TokenLEQ : lexer cs
 lexer ('>':'=':cs)     = TokenGEQ : lexer cs
 lexer ('=':'=':cs)     = TokenDoubleEqual : lexer cs
