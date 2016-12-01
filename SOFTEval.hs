@@ -73,7 +73,7 @@ instance Show Exp where
     show (ERst l)     = "[" ++ (show l) ++ "]"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)         
-    show (EFunc s p e)    =show s ++ " " ++ show p ++ " " ++ show e 
+    show (EFunc s p _)    = show s ++ " declared with parameters " ++ show p
 
 
 value :: Exp -> Bool 

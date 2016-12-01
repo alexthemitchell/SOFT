@@ -1,2 +1,2 @@
-hellomake: 
-	happy SOFTGrammar.y && runhaskell REPL.hs
+buildGrammar: 
+	happy SOFTGrammar.y 
