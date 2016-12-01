@@ -46,12 +46,14 @@ type EnvStack = [Env]
 instance Show Exp where
     show (EInt n)  = show n
     show (EFlt f)  = show f
-    show (EBool b) = show b
+    show (EBool b)
+      | b == True = "true"
+      | b == False = "false"
     show (ELet n v)= show n ++ " is " ++ show v
     show (EChar c) = [c] 
     show (EStr s)  = s
     show (ELst []) = "nil" 
-    show (ELst (x:xs)) = show x ++ show xs
+    show (ELst l) = show l
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) = 
      case op of
