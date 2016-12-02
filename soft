@@ -1,2 +1,0 @@
-#!/bin/bash
-runhaskell SOFTRun.hs $1 

@@ -1,2 +1,4 @@
 SOFTGrammar.hs
 *.swp
+*.o
+*.hi
