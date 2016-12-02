@@ -1,2 +1,2 @@
 #!/bin/bash
-make && runhaskell SOFTRun.hs
+runhaskell SOFTRun.hs $1 
