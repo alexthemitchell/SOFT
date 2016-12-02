@@ -1,10 +1,6 @@
 module SOFTLexer where
 import Data.Char
 
--- Error handling --
-parseError :: [Token] -> a
-parseError _ = error "Parse Error lol"    
-
 -- Token types --
 data Token
       = TokenInt Int
