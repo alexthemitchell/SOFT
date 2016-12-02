@@ -35,12 +35,14 @@ data Token
       | TokenLSqBrkt
       | TokenRSqBrkt
       | TokenComma
+      | TokenNewline
  deriving Show
 
 -- Lexer --
 lexer :: String -> [Token]
-lexer [] = []
-lexer ('#':cs)         = TokenComment : lexer cs
+lexer []               = []
+lexer ('\n':cs)        = [TokenNewline]
+lexer ('#':cs)         = [TokenComment]
 lexer ('"':cs)         = lexStr cs
 lexer (c:cs) 
       | isSpace c      = lexer cs

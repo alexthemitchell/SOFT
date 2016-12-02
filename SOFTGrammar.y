@@ -47,6 +47,7 @@ import SOFTEval
   char      { TokenChar $$ }
   ','       { TokenComma }
   str       { TokenStr $$ }
+  '\n'      { TokenNewline }
 %% 
 
 Exp     : let var '=' Closure                         { evaluate $ ELet $2 $ evaluate $4 }
@@ -54,7 +55,8 @@ Exp     : let var '=' Closure                         { evaluate $ ELet $2 $ eva
         | var                                         { evaluate $ EVar $1 }
         | Value ':' '[' List ']'                      { ELst $ $1 : (reverse $ $4) } 
         | Closure                                     { evaluate $1 }
-        | '#' Exp                                     { ENil }
+        | '#'                                         { ENil }
+        | '\n'                                        { ENil }
 
 Closure : '(' Exp ')'       { evaluate $2 }
         | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here. 
