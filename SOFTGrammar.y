@@ -26,7 +26,7 @@ import SOFTEval
   '='       { TokenEqual }
   '=='      { TokenDoubleEqual }
   '+'       { TokenPlus }
-  '-'       { TokenMinus}
+  '-'       { TokenMinus }
   '*'       { TokenAsterisk }
   'mod'     { TokenMod }
   '<'       { TokenLT }
@@ -44,11 +44,12 @@ import SOFTEval
   '['       { TokenLSqBrkt }
   ']'       { TokenRSqBrkt }
   int       { TokenInt $$ }
+  float     { TokenFlt $$ }
   char      { TokenChar $$ }
   ','       { TokenComma }
   str       { TokenStr $$ }
   '\n'      { TokenNewline }
-%% 
+%%
 
 Exp     : let var '=' Closure                         { evaluate $ ELet $2 $ evaluate $4 }
         | function var '(' Parameters ')' '{' Exp '}' { evaluate $ EFunc $2 (reverse $4) $7 }
@@ -93,6 +94,7 @@ BOpBool : Value '==' Value  { EBinop $1 BEql $3 }
 
 
 Value   : int               { EInt $1 }
+        | float             { EFlt $1 }
         | char              { EChar $1 }
         | Bool              { evaluate $1 }
         | str               { EStr $1 }

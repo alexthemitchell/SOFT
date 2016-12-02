@@ -4,6 +4,7 @@ import Data.Char
 -- Token types --
 data Token
       = TokenInt Int
+      | TokenFlt Float
       | TokenChar Char
       | TokenVar String
       | TokenStr String
@@ -72,13 +73,13 @@ lexer (',':cs)         = TokenComma : lexer cs
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
   where (str, rest) = span (\x -> x /= '"') cs
 
-lexNum cs = TokenInt (read num) : lexer rest
-      where (num,rest) = span isDigit cs
+lexNum cs = if any (=='.') cs then TokenFlt (read num) : lexer rest else TokenInt (read num) : lexer rest
+    where (num,rest) = span (\x-> isDigit x || x =='.') cs
 
 lexVar cs =
    case span isAlpha cs of
       ("nil",rest)    -> TokenNil : lexer rest
-      (":",rest)   -> TokenCons : lexer rest
+      (":",rest)      -> TokenCons : lexer rest
       ("let",rest)    -> TokenLet : lexer rest
       ("true",rest)   -> TokenTrue : lexer rest
       ("false", rest) -> TokenFalse : lexer rest
