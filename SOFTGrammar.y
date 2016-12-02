@@ -14,6 +14,7 @@ import SOFTEval
 
 %token
   nil       { TokenNil }
+  ':'       { TokenCons }
   let       { TokenLet }
   function  { TokenFunction }
   var       { TokenVar $$ }
@@ -46,10 +47,11 @@ import SOFTEval
   str       { TokenStr $$ }
 %% 
 
-Exp     : let var '=' Exp                     { evaluate $ ELet $2 $4 }
+Exp     : let var '=' Exp                             { evaluate $ ELet $2 $4 }
         | function var '(' Parameters ')' '{' Exp '}' { evaluate $ EFunc $2 (reverse $4) $7 }
-        | var                                 { evaluate $ EVar $1 }
-        | Closure                             { evaluate $1 }
+        | var                                         { evaluate $ EVar $1 }
+        | Value ':' '[' List ']'                      { ELst $ $1 : (reverse $ $4) } 
+        | Closure                                     { evaluate $1 }
 
 Closure : '(' Exp ')'       { evaluate $2 }
         | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here. 
@@ -82,6 +84,7 @@ BOpBool : Value '==' Value  { EBinop $1 BEql $3 }
         |'not' Value        { ENot $2 }
         | Value             { evaluate $1 } 
 
+ 
 Value   : int               { EInt $1 }
         | char              { EChar $1 }
         | Bool              { evaluate $1 }
