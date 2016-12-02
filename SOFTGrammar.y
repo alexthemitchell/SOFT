@@ -52,7 +52,7 @@ Exp     : let var '=' Exp                             { evaluate $ ELet $2 $4 }
         | var                                         { evaluate $ EVar $1 }
         | Value ':' '[' List ']'                      { ELst $ $1 : (reverse $ $4) } 
         | Closure                                     { evaluate $1 }
-
+        | '#' Exp                                     { ENil }
 Closure : '(' Exp ')'       { evaluate $2 }
         | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here. 
         | BOpNum            { evaluate $1 } 

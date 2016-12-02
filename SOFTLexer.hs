@@ -44,12 +44,12 @@ data Token
 -- Lexer --
 lexer :: String -> [Token]
 lexer [] = []
+lexer ('#':cs)         = TokenComment : lexer cs
 lexer ('"':cs)         = lexStr cs
 lexer (c:cs) 
       | isSpace c      = lexer cs
       | isAlpha c      = lexVar (c:cs)
       | isDigit c      = lexNum (c:cs)
-lexer ('#':cs)         = TokenComment : lexer cs
 lexer ('+':cs)         = TokenPlus : lexer cs
 lexer ('-':cs)         = TokenMinus : lexer cs
 lexer ('*':cs)         = TokenAsterisk : lexer cs
