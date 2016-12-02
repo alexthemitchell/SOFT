@@ -32,6 +32,7 @@ data Token
       | TokenRParen
       | TokenLBrace
       | TokenRBrace
+      | TokenEmptyList
       | TokenLSqBrkt
       | TokenRSqBrkt
       | TokenComma

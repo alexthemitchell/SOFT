@@ -1,7 +1,7 @@
 ### LIST
-#1:2:nil
-#1:2:3:4:nil
-#1:nil
+1:2:[]
+1:2:3:4:nil
+1:nil
 
 ### STRING
 #"\"Oh my,\" she said, \"that's easy!\""
@@ -36,9 +36,9 @@ empty (ls3)
 
 ### :
 let ls = [0,1]
-# ls:3
-# -1:ls:2
-# 1:nil
+ ls:3
+ -1:ls:2
+ 1:nil
 
 ### NUMBER OPERATORS
 1 + 5
@@ -61,13 +61,13 @@ area
 1 < 5
 1 <= 1
 2 > 4
-5 = 5
+5 == 5
 
 # FUNCTIONS
 function addBiz (num) { num + 5 } 
-# addBiz (10)
+addBiz (10)
 function multiply (num1, num2) { num1 * num2 }
-# multiply (7,9)
+multiply (7,9)
 
 # BOOLEAN OPERATORS
 let x = 3
@@ -78,11 +78,11 @@ let b2 = (x == y)
 let b3 = (z == 4)
 let b4 = {y == 5}
 
-# let and1 = and (b1, b2, b3, b4)
-# let and2 = and (b1, b4)
+let and1 = and (b1, b2, b3, b4)
+let and2 = and (b1, b4)
 
-# let or1 = or (b1, b2, b3, b4)
-# let or2 = or (b2, b3)
+let or1 = or (b1, b2, b3, b4)
+let or2 = or (b2, b3)
 
 let not1 = not (b1)
 let not2 = not (b2)

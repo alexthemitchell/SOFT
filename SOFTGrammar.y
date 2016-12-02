@@ -53,19 +53,21 @@ import SOFTEval
 Exp     : let var '=' Closure                         { evaluate $ ELet $2 $ evaluate $4 }
         | function var '(' Parameters ')' '{' Exp '}' { evaluate $ EFunc $2 (reverse $4) $7 }
         | var                                         { evaluate $ EVar $1 }
-        | Value ':' '[' List ']'                      { ELst $ $1 : (reverse $ $4) }
         | Closure                                     { evaluate $1 }
         | '#'                                         { ENil }
         | '\n'                                        { ENil }
 
 Closure : '(' Exp ')'       { evaluate $2 }
         | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
+        | ConsList          { $1 }
         | BOpNum            { evaluate $1 }
 
 List    : List ',' Value    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
-        | List ','          { $1 }
         | Value             { [$1] }
-        | {- empty -}       { [] }
+        | {- Empty -}       { [] }
+
+ConsList : Value ':' ConsList { ECons (evaluate $1) (evaluate $3) }
+         | '[' List ']'       { ELst $ reverse $2 }
 
 Parameters : Parameters ',' var  { $3 : $1 }
            | var                 { [$1] }
