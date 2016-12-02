@@ -1,7 +1,7 @@
 ### LIST
 1:2:[]
-1:2:3:4:nil
-1:nil
+1:2:3:4:[]
+1:[]
 
 ### STRING
 #"\"Oh my,\" she said, \"that's easy!\""
