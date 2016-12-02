@@ -1,5 +1,5 @@
-# To Make and Run REPL
-  `./soft`
+# To Make and Run
+  `make && ./soft`
 # To Make Only
   `make`
 
