@@ -4,6 +4,10 @@ import SOFTLexer
 import System.IO
 import System.Environment
 
+--{
+--REPL code taken from: 
+--https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours/Building_a_REPL
+--}
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do 
     result <- prompt
