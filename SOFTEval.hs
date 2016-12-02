@@ -10,7 +10,7 @@ import SOFTLexer
 parseError :: [Token] -> E a
 parseError tokens = failE "Parse error"
 
-data E a = Ok a | Failed String
+data E a = Ok a | Failed String deriving Show
 
 thenE :: E a -> (a -> E b) -> E b
 m `thenE` k = 
