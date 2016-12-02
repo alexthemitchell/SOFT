@@ -7,5 +7,5 @@ buildGrammar:
 
 all: clean $(binaries)
 clean:
-	rm $(derivedFiles)
-	rm *.o *.hi
+	rm -f $(derivedFiles)
+	rm -f *.o *.hi
