@@ -47,12 +47,13 @@ import SOFTEval
   str       { TokenStr $$ }
 %% 
 
-Exp     : let var '=' Exp                             { evaluate $ ELet $2 $4 }
+Exp     : let var '=' Closure                         { evaluate $ ELet $2 $ evaluate $4 }
         | function var '(' Parameters ')' '{' Exp '}' { evaluate $ EFunc $2 (reverse $4) $7 }
         | var                                         { evaluate $ EVar $1 }
         | Value ':' '[' List ']'                      { ELst $ $1 : (reverse $ $4) } 
         | Closure                                     { evaluate $1 }
         | '#' Exp                                     { ENil }
+
 Closure : '(' Exp ')'       { evaluate $2 }
         | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here. 
         | BOpNum            { evaluate $1 } 
