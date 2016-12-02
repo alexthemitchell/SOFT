@@ -8,4 +8,4 @@ buildGrammar:
 all: clean $(binaries)
 clean:
 	rm $(derivedFiles)
-	rm $(binaries) *.o *.hi
+	rm *.o *.hi
