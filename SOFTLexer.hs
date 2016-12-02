@@ -13,6 +13,7 @@ data Token
       | TokenStr String
       | TokenFunction
       | TokenNil
+      | TokenCons
       | TokenLet
       | TokenTrue
       | TokenFalse
@@ -60,6 +61,7 @@ lexer ('{':cs)         = TokenLBrace : lexer cs
 lexer ('}':cs)         = TokenRBrace : lexer cs
 lexer ('[':cs)         = TokenLSqBrkt : lexer cs
 lexer (']':cs)         = TokenRSqBrkt : lexer cs
+lexer (':':cs)         = TokenCons : lexer cs
 lexer ('<':'=':cs)     = TokenLEQ : lexer cs
 lexer ('>':'=':cs)     = TokenGEQ : lexer cs
 lexer ('=':'=':cs)     = TokenDoubleEqual : lexer cs
@@ -77,6 +79,7 @@ lexNum cs = TokenInt (read num) : lexer rest
 lexVar cs =
    case span isAlpha cs of
       ("nil",rest)    -> TokenNil : lexer rest
+      (":",rest)   -> TokenCons : lexer rest
       ("let",rest)    -> TokenLet : lexer rest
       ("true",rest)   -> TokenTrue : lexer rest
       ("false", rest) -> TokenFalse : lexer rest
