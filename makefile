@@ -1,10 +1,10 @@
 derivedFiles=SOFTGrammar.hs
-all: clean $(binaries)
 
 buildGrammar: 
 	happy SOFTGrammar.y 
 
 .PHONY: clean
 
+all: clean $(binaries)
 clean:
 	rm $(derivedFiles)
