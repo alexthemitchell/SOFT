@@ -20,9 +20,9 @@ data Token
       | TokenMinus
       | TokenAsterisk
       | TokenMod
-      | TokenLT 
+      | TokenLT
       | TokenGT
-      | TokenLEQ  
+      | TokenLEQ
       | TokenGEQ
       | TokenAnd
       | TokenOr
@@ -44,7 +44,7 @@ lexer []               = []
 lexer ('\n':cs)        = [TokenNewline]
 lexer ('#':cs)         = [TokenComment]
 lexer ('"':cs)         = lexStr cs
-lexer (c:cs) 
+lexer (c:cs)
       | isSpace c      = lexer cs
       | isAlpha c      = lexVar (c:cs)
       | isDigit c      = lexNum (c:cs)

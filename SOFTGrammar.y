@@ -25,7 +25,7 @@ import SOFTEval
   '#'       { TokenComment }
   '='       { TokenEqual }
   '=='      { TokenDoubleEqual }
-  '+'       { TokenPlus } 
+  '+'       { TokenPlus }
   '-'       { TokenMinus}
   '*'       { TokenAsterisk }
   'mod'     { TokenMod }
@@ -53,14 +53,14 @@ import SOFTEval
 Exp     : let var '=' Closure                         { evaluate $ ELet $2 $ evaluate $4 }
         | function var '(' Parameters ')' '{' Exp '}' { evaluate $ EFunc $2 (reverse $4) $7 }
         | var                                         { evaluate $ EVar $1 }
-        | Value ':' '[' List ']'                      { ELst $ $1 : (reverse $ $4) } 
+        | Value ':' '[' List ']'                      { ELst $ $1 : (reverse $ $4) }
         | Closure                                     { evaluate $1 }
         | '#'                                         { ENil }
         | '\n'                                        { ENil }
 
 Closure : '(' Exp ')'       { evaluate $2 }
-        | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here. 
-        | BOpNum            { evaluate $1 } 
+        | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
+        | BOpNum            { evaluate $1 }
 
 List    : List ',' Value    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
         | List ','          { $1 }
@@ -87,9 +87,9 @@ BOpBool : Value '==' Value  { EBinop $1 BEql $3 }
         | Value 'and' Value { EBinop $1 BAnd $3 }
         | Value 'or' Value  { EBinop $1 BOr $3 }
         |'not' Value        { ENot $2 }
-        | Value             { evaluate $1 } 
+        | Value             { evaluate $1 }
 
- 
+
 Value   : int               { EInt $1 }
         | char              { EChar $1 }
         | Bool              { evaluate $1 }
@@ -97,4 +97,4 @@ Value   : int               { EInt $1 }
         | nil               { ENil }
 
 Bool    : true              { EBool True }
-        | false             { EBool False } 
+        | false             { EBool False }
