@@ -1,7 +1,8 @@
 {-# Language GADTs #-}
 module SOFTEval where
 import SOFTLexer
-
+--import Data.Global
+import Data.IORef
 
 -- Error handling --
 -- The exception Monad below is taken from:
@@ -31,7 +32,9 @@ catchE :: E a -> (String -> E a) -> E a
 catchE m k =
   case m of Ok a -> Ok a
             Failed e -> k e
-
+--declareIORef "env"
+--  [t| Env ]
+--  [e| []  ]
 
 
 data Bop =
@@ -87,6 +90,7 @@ instance Show Exp where
     show (EStr s)  = s
     show (ELst []) = "nil"
     show (ELst l) = show l
+    show (EVar v) = show v  
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) =
      case op of
@@ -214,7 +218,7 @@ step e (ECons v l)
       ENil     -> (ELst $ v: [], e)
       _        -> (EErr "cons takes a value and a list", e)
 step e ENil = (ELst $ [], e)
-step e (EApp s l) = step (addV l e) (find (EApp s l) e)
+step e (EApp s l) = step (addV s l e) (find (EApp s l) e)
 --call for variable declaration
 step e (ELet s v)
   | value v        = step ((s,v):e) v
@@ -226,27 +230,33 @@ step e (ELet s v)
 --call for function declaration
 step e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e)
-  | otherwise = step ((s,e1):e) ENil
+  | otherwise = do
+       --writeIORef env (addS l ((s,e1):e))
+       step (addS l ((s,e1):e)) ENil
 
 addS :: [String] -> Env -> Env
 addS [] e = e
 addS (x:xs) e = addS xs ((x, ENil):e)
 
-addV :: [Exp] -> Env -> Env
-addV [] e = e
-addV (x:xs) ((s, v):e) = addV xs ((s, x):e)
+--assigns given parameters to named variables in env
+addV :: String -> [Exp] -> Env -> Env
+addV "" [] e = e
+addV "" (x:xs) ((s, v):e) = addV "" xs ((s, x):e)
+addV s l ((s1,e1):e)  
+ | s==s1     = addV "" l e
+ | otherwise = e
+
 {--
   let x = 5 in x + 1
   ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
 
   let f(x) = x+1 in f(0)
   EFunc f [x] (EAdd (EVar "x") (EInt 1)) (EApp f [0]))
-  EFun  :: String -> [Exp] -> Exp
-  EApp  :: Exp -> [Exp] -> Exp
+  EApp  :: String -> [Exp] -> Exp
   ELet  :: String -> Exp -> Exp -> Exp -- let x = e1 in e2
   EVar  :: String -> Exp --x
   EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
---}
+	--}
 evaluate :: Exp -> Exp
 evaluate e
   | not $ value e = evaluate $ fst (step [] e)
