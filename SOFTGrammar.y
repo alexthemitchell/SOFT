@@ -40,10 +40,10 @@ import SOFTEval
   '}'       { TokenRBrace }
   '['       { TokenLSqBrkt }
   ']'       { TokenRSqBrkt }
-  '"'       { TokenQuotation }
   int       { TokenInt $$ }
   char      { TokenChar $$ }
   ','       { TokenComma }
+  str       { TokenStr $$ }
 %% 
 
 Exp     : let var '=' Exp                     { evaluate $ ELet $2 $4 }
@@ -56,12 +56,13 @@ Closure : '(' Exp ')'       { evaluate $2 }
         | BOpNum            { evaluate $1 } 
 
 List    : List ',' Value    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
+        | List ','          { $1 }
         | Value             { [$1] }
         | {- empty -}       { [] }
 
 Parameters : Parameters ',' var  { $3 : $1 }
            | var                 { [$1] }
-           | {- empty -}              { [] }
+           | {- empty -}         { [] }
 
 BOpNum  : Value '+' Value   { EBinop $1 BAdd $3 }
         | Value '-' Value   { EBinop $1 BSub $3 }
@@ -84,6 +85,7 @@ BOpBool : Value '==' Value  { EBinop $1 BEql $3 }
 Value   : int               { EInt $1 }
         | char              { EChar $1 }
         | Bool              { evaluate $1 }
+        | str               { EStr $1 }
         | nil               { ENil }
 
 Bool    : true              { EBool True }

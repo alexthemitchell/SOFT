@@ -10,6 +10,7 @@ data Token
       = TokenInt Int
       | TokenChar Char
       | TokenVar String
+      | TokenStr String
       | TokenFunction
       | TokenNil
       | TokenLet
@@ -36,23 +37,22 @@ data Token
       | TokenRBrace
       | TokenLSqBrkt
       | TokenRSqBrkt
-      | TokenQuotation
       | TokenComma
  deriving Show
 
 -- Lexer --
 lexer :: String -> [Token]
 lexer [] = []
+lexer ('"':cs)         = lexStr cs
 lexer (c:cs) 
-      | isSpace c = lexer cs
-      | isAlpha c = lexVar (c:cs)
-      | isDigit c = lexNum (c:cs)
+      | isSpace c      = lexer cs
+      | isAlpha c      = lexVar (c:cs)
+      | isDigit c      = lexNum (c:cs)
 lexer ('#':cs)         = TokenComment : lexer cs
 lexer ('+':cs)         = TokenPlus : lexer cs
 lexer ('-':cs)         = TokenMinus : lexer cs
 lexer ('*':cs)         = TokenAsterisk : lexer cs
 lexer ('/':cs)         = TokenFSlash : lexer cs
-lexer ('"':cs)         = TokenQuotation : lexer cs
 lexer ('\'':x:'\'':cs) = TokenChar x : lexer cs
 lexer ('(':cs)         = TokenLParen : lexer cs
 lexer (')':cs)         = TokenRParen : lexer cs
@@ -67,6 +67,9 @@ lexer ('<':cs)         = TokenLT : lexer cs
 lexer ('>':cs)         = TokenGT : lexer cs
 lexer ('=':cs)         = TokenEqual : lexer cs
 lexer (',':cs)         = TokenComma : lexer cs
+
+lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
+  where (str, rest) = span (\x -> x /= '"') cs
 
 lexNum cs = TokenInt (read num) : lexer rest
       where (num,rest) = span isDigit cs
