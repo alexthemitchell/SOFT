@@ -50,13 +50,13 @@ import SOFTEval
   str       { TokenStr $$ }
   '\n'      { TokenNewline }
 %%
-Cmd     : Exp { evaluate $1 }
+Cmd     : Exp         { evaluate $1 }
+        | {- Empty -} { ENil }
+        | '#'         { ENil }
 
 Exp     : let var '=' Closure                         { ELet $2 $ $4 }
         | function var '(' Parameters ')' '{' Exp '}' { EFunc $2 (reverse $4) $7 }
         | Closure                                     { $1 }
-        | '#'                                         { ENil }
-        | '\n'                                        { ENil }
 
 Closure : '(' Exp ')'       { $2 }
         | List              { $1 } 

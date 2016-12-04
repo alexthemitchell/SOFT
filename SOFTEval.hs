@@ -108,7 +108,7 @@ instance Show Exp where
       BOr  -> (show e1) ++ " or "  ++ (show e2)
     show (ENot e)     = "not " ++ (show e)
     show (EFst l)     = "first " ++ (show l)
-    show ENil         = "nil"
+    show ENil         = ""
     show (ERst l)     = "[" ++ (show l) ++ "]"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)
