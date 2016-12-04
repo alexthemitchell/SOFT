@@ -50,25 +50,25 @@ import SOFTEval
   str       { TokenStr $$ }
   '\n'      { TokenNewline }
 %%
+Cmd     : Exp { evaluate $1 }
 
-Exp     : let var '=' Closure                         { evaluate $ ELet $2 $ evaluate $4 }
-        | function var '(' Parameters ')' '{' Exp '}' { evaluate $ EFunc $2 (reverse $4) $7 }
-        | var                                         { evaluate $ EVar $1 }
-        | Closure                                     { evaluate $1 }
+Exp     : let var '=' Closure                         { ELet $2 $ $4 }
+        | function var '(' Parameters ')' '{' Exp '}' { EFunc $2 (reverse $4) $7 }
+        | Closure                                     { $1 }
         | '#'                                         { ENil }
         | '\n'                                        { ENil }
 
-Closure : '(' Exp ')'       { evaluate $2 }
-        | '[' List ']'      { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
-        | ConsList          { $1 }
-        | BOpNum            { evaluate $1 }
+Closure : '(' Exp ')'       { $2 }
+        | List              { $1 } 
+        | var               { (EVar $1) }
+        | BOpNum            { $1 }
 
-List    : List ',' Value    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
-        | Value             { [$1] }
-        | {- Empty -}       { [] }
+List : '[' ListLiteral ']' { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
+     | Closure ':' List    { ECons $1 $3 }
 
-ConsList : Value ':' ConsList     { ECons (evaluate $1) (evaluate $3) }
-         | Value ':' '[' List ']' { ECons (evaluate $1) (ELst $ reverse $4) }
+ListLiteral : ListLiteral ',' Exp    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
+            | Exp                    { [$1] }
+            | {- Empty -}            { [] }
 
 Parameters : Parameters ',' var  { $3 : $1 }
            | var                 { [$1] }
@@ -84,19 +84,19 @@ BOpNum  : Value '+' Value   { EBinop $1 BAdd $3 }
         | Value '>' Value   { EBinop $1 BGtn $3 }
         | Value '>=' Value  { EBinop $1 BGeq $3 }
         | Value '<=' Value  { EBinop $1 BLeq $3 }
-        | BOpBool           { evaluate $1 }
+        | BOpBool           { $1 }
 
 BOpBool : Value '==' Value  { EBinop $1 BEql $3 }
         | Value 'and' Value { EBinop $1 BAnd $3 }
         | Value 'or' Value  { EBinop $1 BOr $3 }
         |'not' Value        { ENot $2 }
-        | Value             { evaluate $1 }
+        | Value             { $1 }
 
 
 Value   : int               { EInt $1 }
         | float             { EFlt $1 }
         | char              { EChar $1 }
-        | Bool              { evaluate $1 }
+        | Bool              { $1 }
         | str               { EStr $1 }
         | nil               { ENil }
 
