@@ -88,7 +88,7 @@ instance Show Exp where
     show (ELet n v)= show n ++ " is " ++ show v
     show (EChar c) = [c]
     show (EStr s)  = s
-    show (ELst []) = "nil"
+    show (ELst []) ="[]"
     show (ELst l) = show l
     show (EVar v) = show v  
     show (EErr e)  = "Error: " ++ e
