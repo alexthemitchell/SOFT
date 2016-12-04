@@ -67,8 +67,8 @@ List    : List ',' Value    { $3 : $1 } -- (1 of 2) We use left recursion for st
         | Value             { [$1] }
         | {- Empty -}       { [] }
 
-ConsList : Value ':' ConsList { ECons (evaluate $1) (evaluate $3) }
-         | '[' List ']'       { ELst $ reverse $2 }
+ConsList : Value ':' ConsList     { ECons (evaluate $1) (evaluate $3) }
+         | Value ':' '[' List ']' { ECons (evaluate $1) (ELst $ reverse $4) }
 
 Parameters : Parameters ',' var  { $3 : $1 }
            | var                 { [$1] }
