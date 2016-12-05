@@ -60,7 +60,6 @@ Exp     : let var '=' Closure                         { ELet $2 $ $4 }
 
 Closure : '(' Exp ')'       { $2 }
         | List              { $1 } 
-        | var               { (EVar $1) }
         | BOpNum            { $1 }
 
 List : '[' ListLiteral ']' { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
@@ -99,6 +98,7 @@ Value   : int               { EInt $1 }
         | Bool              { $1 }
         | str               { EStr $1 }
         | nil               { ENil }
+        | var               { (EVar $1) }
 
 Bool    : true              { EBool True }
         | false             { EBool False }
