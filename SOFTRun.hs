@@ -18,7 +18,7 @@ until_ env pred prompt = do
           let monad = parse .lexer $ result
           case monad of 
             (Ok m) -> do
-              let (ex, en) = evaluate' env m
+              let (ex, en) = evaluate env m
               putStrLn $ show en
               putStrLn $ show ex
               until_ en pred prompt

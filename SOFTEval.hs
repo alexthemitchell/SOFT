@@ -126,7 +126,7 @@ value (EErr _)        = True
 value (EVar _)        = False 
 value (EClos _)       = True
 value (EFunc _ _ _) = True
-value (ELet _ _)    = True
+value (ELet _ _)    = False
 value _           = False
 
 find :: Exp -> Env -> Exp
@@ -257,12 +257,8 @@ addV s l ((s1,e1):e)
   EVar  :: String -> Exp --x
   EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
 	--}
-evaluate :: Env -> Exp -> Exp
-evaluate env exp 
-  | not $ value exp = (\(ex, en) -> evaluate en ex) (step env exp)
-  | otherwise = exp
   
-evaluate' :: Env -> Exp -> (Exp, Env)
-evaluate' env exp
-  | not $ value exp = (\(ex, en) -> evaluate' en ex) (step env exp)
+evaluate :: Env -> Exp -> (Exp, Env)
+evaluate env exp
+  | not $ value exp = (\(ex, en) -> evaluate en ex) (step env exp)
   | otherwise     =  (exp, env)
