@@ -73,24 +73,24 @@ Parameters : Parameters ',' var  { $3 : $1 }
            | var                 { [$1] }
            | {- empty -}         { [] }
 
-BOpNum  : BOpNum '+' BOpNum   { EBinop $1 BAdd $3 }
-        | BOpNum '-' BOpNum   { EBinop $1 BSub $3 }
-        | BOpNum '*' BOpNum   { EBinop $1 BMul $3 }
-        | BOpNum '/' BOpNum   { EBinop $1 BDiv $3 }
-        | BOpNum 'mod' BOpNum { EBinop $1 BMod $3 }
-        | BOpNum '==' BOpNum  { EBinop $1 BEql $3 }
-        | BOpNum '<' BOpNum   { EBinop $1 BLtn $3 }
-        | BOpNum '>' BOpNum   { EBinop $1 BGtn $3 }
-        | BOpNum '>=' BOpNum  { EBinop $1 BGeq $3 }
-        | BOpNum '<=' BOpNum  { EBinop $1 BLeq $3 }
-        | Value               { $1 }
-        | BOpBool             { $1 }
+BOpNum  : Value '+' BOpNum   { EBinop $1 BAdd $3 }
+        | Value '-' BOpNum   { EBinop $1 BSub $3 }
+        | Value '*' BOpNum   { EBinop $1 BMul $3 }
+        | Value '/' BOpNum   { EBinop $1 BDiv $3 }
+        | Value 'mod' BOpNum { EBinop $1 BMod $3 }
+        | Value '==' BOpNum  { EBinop $1 BEql $3 }
+        | Value '<' BOpNum   { EBinop $1 BLtn $3 }
+        | Value '>' BOpNum   { EBinop $1 BGtn $3 }
+        | Value '>=' BOpNum  { EBinop $1 BGeq $3 }
+        | Value'<=' BOpNum   { EBinop $1 BLeq $3 }
+        | Value              { $1 }
+        | BOpBool            { $1 }
 
-BOpBool : Value '==' Value  { EBinop $1 BEql $3 }
-        | Value 'and' Value { EBinop $1 BAnd $3 }
-        | Value 'or' Value  { EBinop $1 BOr $3 }
-        |'not' Value        { ENot $2 }
-        | Value             { $1 }
+BOpBool : Value '==' BOpBool  { EBinop $1 BEql $3 }
+        | Value 'and' BOpBool { EBinop $1 BAnd $3 }
+        | Value 'or' BOpBool  { EBinop $1 BOr $3 }
+        |'not' Value          { ENot $2 }
+        | Value               { $1 }
 
 
 Value   : int               { EInt $1 }
