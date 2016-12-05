@@ -123,7 +123,7 @@ value (EChar _)       = True
 value (EStr _)        = True
 value (ELst l)        = all value l --all :: (a -> Bool) -> [a] -> Bool
 value (EErr _)        = True
-value (EVar _)        = False
+value (EVar _)        = False 
 value (EClos _)       = True
 value (EFunc _ _ _) = True
 value (ELet _ _)    = True
@@ -147,7 +147,7 @@ step e (EChar c) = (EChar c, e)
 step e (EStr  s) = (EStr s, e)
 step e (ELst  l) = (ELst l, e)
 step v (EErr  e) = (EErr e, v)
-step e (EVar  s) = step e (find (EVar s) e)
+step e (EVar  s) = step e (find (EVar s) e) --returns value associated with variable
 step e (EBinop e1 op e2)
   | not $ value e1 = (EBinop (fst $ step e e1) op e2, e)
   | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
@@ -221,7 +221,7 @@ step e ENil = (ELst $ [], e)
 step e (EApp s l) = step (addV s l e) (find (EApp s l) e)
 --call for variable declaration
 step e (ELet s v)
-  | value v        = step ((s,v):e) v
+  | value v        = (v, (s,v):e)
   | otherwise      =
      case v of
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e)
@@ -257,7 +257,12 @@ addV s l ((s1,e1):e)
   EVar  :: String -> Exp --x
   EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
 	--}
-evaluate :: Exp -> Exp
-evaluate e
-  | not $ value e = evaluate $ fst (step [] e)
-  | otherwise     =  e
+evaluate :: Env -> Exp -> Exp
+evaluate env exp 
+  | not $ value exp = (\(ex, en) -> evaluate en ex) (step env exp)
+  | otherwise = exp
+  
+evaluate' :: Env -> Exp -> (Exp, Env)
+evaluate' env exp
+  | not $ value exp = (\(ex, en) -> evaluate' en ex) (step env exp)
+  | otherwise     =  (exp, env)

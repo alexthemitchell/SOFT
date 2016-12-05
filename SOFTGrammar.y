@@ -50,7 +50,7 @@ import SOFTEval
   str       { TokenStr $$ }
   '\n'      { TokenNewline }
 %%
-Cmd     : Exp         { evaluate $1 }
+Cmd     : Exp         { $1 }
         | {- Empty -} { ENil }
         | '#'         { ENil }
 
@@ -96,10 +96,10 @@ BOpBool : Value '==' BOpBool  { EBinop $1 BEql $3 }
 Value   : int               { EInt $1 }
         | float             { EFlt $1 }
         | char              { EChar $1 }
+        | var               { EVar $1 }
         | Bool              { $1 }
         | str               { EStr $1 }
         | nil               { ENil }
-        | var               { (EVar $1) }
 
 Bool    : true              { EBool True }
         | false             { EBool False }

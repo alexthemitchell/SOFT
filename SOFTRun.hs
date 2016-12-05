@@ -9,12 +9,20 @@ import System.Environment
 --REPL code taken from:
 --https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours/Building_a_REPL
 --}
-until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
-until_ pred prompt action = do
+until_ :: Env -> (String -> Bool) -> IO String -> IO ()
+until_ env pred prompt = do
     result <- prompt
     if pred result
         then return ()
-        else action result >> until_ pred prompt action
+        else do 
+          let monad = parse .lexer $ result
+          case monad of 
+            (Ok m) -> do
+              let (ex, en) = evaluate' env m
+              putStrLn $ show en
+              putStrLn $ show ex
+              until_ en pred prompt
+            (Failed s) -> putStr s
 
 main :: IO ()
 main = do args <- getArgs
@@ -23,7 +31,7 @@ main = do args <- getArgs
               code <- readFile $ args !! 0
               let loc = lines code
               runCode loc
-            otherwise -> runRepl
+            otherwise -> runRepl 
 
 flushStr :: String -> IO ()
 flushStr str = putStr str >> hFlush stdout
@@ -35,7 +43,7 @@ evalAndPrint :: String -> IO ()
 evalAndPrint input = print . parse . lexer $ input
 
 runRepl :: IO ()
-runRepl = until_ (== "quit") (readPrompt ">> ") evalAndPrint
+runRepl = until_ [] (== "quit") (readPrompt ">> ")
 
 runCode :: [String] -> IO ()
 runCode l = do 
