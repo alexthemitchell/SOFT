@@ -70,6 +70,7 @@ data Exp where
 --}
   ELet  :: String -> Exp -> Exp -- let x = e1
   EVar  :: String -> Exp --x
+  EPar  :: String -> Exp
   EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations
   EApp  :: String -> [Exp] -> Exp --Applies given function to expression
@@ -90,7 +91,8 @@ instance Show Exp where
     show (EStr s)  = s
     show (ELst []) ="[]"
     show (ELst l) = show l
-    show (EVar v) = show v  
+    show (EVar v) = show v 
+    show (EPar p) = show p
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) =
      case op of
@@ -112,7 +114,7 @@ instance Show Exp where
     show (ERst l)     = "[" ++ (show l) ++ "]"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)
-    show (EFunc s p _)    = "Function " ++ show s ++ " declared with parameters " ++ show p
+    show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
 
 
 value :: Exp -> Bool
@@ -125,19 +127,16 @@ value (ELst l)        = all value l --all :: (a -> Bool) -> [a] -> Bool
 value (EErr _)        = True
 value (EVar _)        = False 
 value (EClos _)       = True
-value (EFunc _ _ _) = True
+value (EFunc _ _ _) = False
 value (ELet _ _)    = False
 value _           = False
 
-find :: Exp -> Env -> Exp
-find (EVar _) []       = EErr "Variable has not been declared"
-find (EApp _ _) []       = EErr "Function has not been declared"
-find (EVar s) ((s1, v1):xs)
+find :: String -> Env -> Exp
+find _ []       = EErr "Variable has not been declared"
+--find "" []       = EErr "Function has not been declared"
+find s ((s1, v1):xs)
   | s == s1   = v1
-  | otherwise = find (EVar s) xs
-find (EApp s l) ((s1, f1):xs)
-  | s == s1   = f1
-  | otherwise = find (EApp s l) xs
+  | otherwise = find s xs
 
 step :: Env ->  Exp -> (Exp, Env)
 step e (EInt  n) = (EInt n, e)
@@ -147,7 +146,9 @@ step e (EChar c) = (EChar c, e)
 step e (EStr  s) = (EStr s, e)
 step e (ELst  l) = (ELst l, e)
 step v (EErr  e) = (EErr e, v)
-step e (EVar  s) = step e (find (EVar s) e) --returns value associated with variable
+step e (EVar  s) = step e (find s e)
+step e (EPar  s) = step e (find s e)
+--returns value associated with variable
 step e (EBinop e1 op e2)
   | not $ value e1 = (EBinop (fst $ step e e1) op e2, e)
   | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
@@ -218,7 +219,10 @@ step e (ECons v l)
       ENil     -> (ELst $ v: [], e)
       _        -> (EErr "cons takes a value and a list", e)
 step e ENil = (ELst $ [], e)
-step e (EApp s l) = step (addV s l e) (find (EApp s l) e)
+step e (EApp s lv) =
+  case find s e of 
+   (EFunc f lp e1) -> (eApply lp lv e1 e, e)
+   _               -> (EErr $ "function" ++ s  ++ "is not declared", e)
 --call for variable declaration
 step e (ELet s v)
   | value v        = (v, (s,v):e)
@@ -230,22 +234,12 @@ step e (ELet s v)
 --call for function declaration
 step e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e)
-  | otherwise = do
-       --writeIORef env (addS l ((s,e1):e))
-       step (addS l ((s,e1):e)) ENil
+  | otherwise = (ENil, (s, (EFunc s l e1)):e) 
 
-addS :: [String] -> Env -> Env
-addS [] e = e
-addS (x:xs) e = addS xs ((x, ENil):e)
-
---assigns given parameters to named variables in env
-addV :: String -> [Exp] -> Env -> Env
-addV "" [] e = e
-addV "" (x:xs) ((s, v):e) = addV "" xs ((s, x):e)
-addV s l ((s1,e1):e)  
- | s==s1     = addV "" l e
- | otherwise = e
-
+eApply :: [String] -> [Exp] -> Exp -> Env -> Exp
+eApply s v exp env 
+  | not $ all value v = eApply s (map (\x -> if not $ value x then fst $ step env x else x) v) exp env
+  | otherwise         = fst $ (step ((zip s v)++env) exp)
 {--
   let x = 5 in x + 1
   ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
