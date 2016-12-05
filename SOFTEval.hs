@@ -221,7 +221,7 @@ step e (ECons v l)
 step e ENil = (ELst $ [], e)
 step e (EApp s lv) =
   case find s e of 
-   (EFunc f lp e1) -> (eApply lp lv e1 e, e)
+   (EFunc f lp e1) -> step e (eApply lp lv e1 e)
    _               -> (EErr $ "function" ++ s  ++ "is not declared", e)
 --call for variable declaration
 step e (ELet s v)
