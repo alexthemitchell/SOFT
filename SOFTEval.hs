@@ -1,4 +1,4 @@
-{-# Language GADTs #-}
+{-# Language GADTs, DeriveAnyClass #-}
 module SOFTEval where
 import SOFTLexer
 --import Data.Global
@@ -42,10 +42,21 @@ data Bop =
   BEql | BLtn | BGtn | BGeq | BLeq |
   BAnd | BOr
 
+data Number where
+    EFlt :: Float -> Number
+    EInt :: Int -> Number deriving (Show, Integral, Eq,Ord,Num)
+
+instance Number b => Number (a -> b) where
+  negate      = fmap negate
+  (+)         = liftA2 (+)
+  (*)         = liftA2 (*)
+  fromInteger = pure . fromInteger
+  abs         = fmap abs
+  signum      = fmap signum
+
 data Exp where
   --Types
-  EInt  :: Int -> Exp
-  EFlt  :: Float -> Exp
+  ENum  :: Number -> Exp
   EBool :: Bool -> Exp
   EChar :: Char -> Exp
   EStr  :: String -> Exp
@@ -76,12 +87,12 @@ data Exp where
  -- EApp  :: Exp -> [Exp] -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
 
+
 type Env = [(String, Exp)]
 type EnvStack = [Env]
 
 instance Show Exp where
-    show (EInt n)  = show n
-    show (EFlt f)  = show f
+    show (ENum n)  = show n
     show (EBool b)
       | b == True = "true"
       | b == False = "false"
@@ -90,7 +101,7 @@ instance Show Exp where
     show (EStr s)  = s
     show (ELst []) ="[]"
     show (ELst l) = show l
-    show (EVar v) = show v  
+    show (EVar v) = show v
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) =
      case op of
@@ -116,14 +127,13 @@ instance Show Exp where
 
 
 value :: Exp -> Bool
-value (EInt _)        = True
-value (EFlt _)        = True
+value (ENum _)        = True
 value (EBool _)       = True
 value (EChar _)       = True
 value (EStr _)        = True
 value (ELst l)        = all value l --all :: (a -> Bool) -> [a] -> Bool
 value (EErr _)        = True
-value (EVar _)        = False 
+value (EVar _)        = False
 value (EClos _)       = True
 value (EFunc _ _ _) = True
 value (ELet _ _)    = False
@@ -140,8 +150,7 @@ find (EApp s l) ((s1, f1):xs)
   | otherwise = find (EApp s l) xs
 
 step :: Env ->  Exp -> (Exp, Env)
-step e (EInt  n) = (EInt n, e)
-step e (EFlt  f) = (EFlt f, e)
+step e (ENum  n) = (ENum n, e)
 step e (EBool b) = (EBool b, e)
 step e (EChar c) = (EChar c, e)
 step e (EStr  s) = (EStr s, e)
@@ -153,33 +162,28 @@ step e (EBinop e1 op e2)
   | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
   | otherwise      =
      case (e1, op ,e2) of
-       (EInt n1, BAdd, EInt n2) -> (EInt  $ n1 + n2, e)
-       (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2, e)
+       (ENum n1, BAdd, ENum n2) -> (ENum  $ n1 + n2, e)
        ( _     , BAdd, _      ) -> (EErr  $ "+ takes ints or floats", e)
-       (EInt n1, BSub, EInt n2) -> (EInt  $ n1 - n2, e)
-       (EFlt f1, BSub, EFlt f2) -> (EFlt  $ f1 - f2, e)
+       (ENum n1, BSub, ENum n2) -> (ENum  $ n1 - n2, e)
        ( _     , BSub, _      ) -> (EErr  $ "- takes ints or floats", e)
-       (EInt n1, BMul, EInt n2) -> (EInt  $ n1 * n2, e)
-       (EFlt f1, BMul, EFlt f2) -> (EFlt  $ f1 * f2, e)
+       (ENum n1, BMul, ENum n2) -> (ENum  $ n1 * n2, e)
        ( _     , BMul, _      ) -> (EErr  $ "* takes ints or floats", e)
-       (EInt n1, BDiv, EInt n2) -> (EInt  $ n1 `div` n2, e)
-       (EFlt f1, BDiv, EFlt f2) -> (EFlt  $ f1 / f2, e)
+       (ENum n1, BDiv, ENum n2) -> (ENum  $ n1 `div` n2, e)
        ( _     , BDiv, _      ) -> (EErr  $ "/ takes ints or floats", e)
-       (EInt n1, BMod, EInt n2) -> (EInt  $ n1 `mod` n2, e)
+       (ENum n1, BMod, ENum n2) -> (ENum  $ n1 `mod` n2, e)
        ( _     , BMod, _      ) -> (EErr  $ "mod takes int, int", e)
-       (EInt n1, BEql, EInt n2) -> (EBool $ n1 == n2, e)
-       (EFlt f1, BEql, EFlt f2) -> (EBool  $ f1 == f2, e)
+       (ENum n1, BEql, ENum n2) -> (EBool $ n1 == n2, e)
        (EBool b1, BEql, EBool b2) -> (EBool $ b1 == b2, e)
        (EStr s1, BEql, EStr s2)   -> (EBool  $ s1 == s2, e)
        (EChar c1, BEql, EChar c2) -> (EBool $ c1 == c2, e)
        ( _     , BEql, _      ) -> (EErr  $ "== takes two of the same type", e)
-       (EInt n1, BLtn, EInt n2) -> (EBool $ n1 < n2, e)
+       (ENum n1, BLtn, ENum n2) -> (EBool $ n1 < n2, e)
        ( _     , BLtn, _      ) -> (EErr  $ "< takes int, int", e)
-       (EInt n1, BGtn, EInt n2) -> (EBool $ n1 > n2, e)
+       (ENum n1, BGtn, ENum n2) -> (EBool $ n1 > n2, e)
        ( _     , BGtn, _      ) -> (EErr  $ "> takes int, int", e)
-       (EInt n1, BLeq, EInt n2) -> (EBool $ n1 <= n2, e)
+       (ENum n1, BLeq, ENum n2) -> (EBool $ n1 <= n2, e)
        ( _     , BLeq, _      ) -> (EErr  $ "<= takes int, int", e)
-       (EInt n1, BGeq, EInt n2) -> (EBool $ n1 >= n2, e)
+       (ENum n1, BGeq, ENum n2) -> (EBool $ n1 >= n2, e)
        ( _     , BGeq, _      ) -> (EErr  $ ">= takes int, int", e)
        (EBool b1, BAnd, EBool b2) -> (EBool $ b1 && b2, e)
        ( _      , BAnd, _      ) -> (EErr  $ "and takes bool, bool", e)
@@ -242,7 +246,7 @@ addS (x:xs) e = addS xs ((x, ENil):e)
 addV :: String -> [Exp] -> Env -> Env
 addV "" [] e = e
 addV "" (x:xs) ((s, v):e) = addV "" xs ((s, x):e)
-addV s l ((s1,e1):e)  
+addV s l ((s1,e1):e)
  | s==s1     = addV "" l e
  | otherwise = e
 
@@ -257,7 +261,7 @@ addV s l ((s1,e1):e)
   EVar  :: String -> Exp --x
   EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
 	--}
-  
+
 evaluate :: Env -> Exp -> (Exp, Env)
 evaluate env exp
   | not $ value exp = (\(ex, en) -> evaluate en ex) (step env exp)
