@@ -96,6 +96,7 @@ BOpBool : Value '==' BOpBool  { EBinop $1 BEql $3 }
 Value   : int               { EInt $1 }
         | float             { EFlt $1 }
         | char              { EChar $1 }
+        | var '(' ListLiteral ')' {EApp $1 $3}
         | var               { EVar $1 }
         | Bool              { $1 }
         | str               { EStr $1 }

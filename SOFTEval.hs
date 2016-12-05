@@ -32,10 +32,6 @@ catchE :: E a -> (String -> E a) -> E a
 catchE m k =
   case m of Ok a -> Ok a
             Failed e -> k e
---declareIORef "env"
---  [t| Env ]
---  [e| []  ]
-
 
 data Bop =
   BAdd | BSub | BMul | BDiv | BMod |
@@ -221,7 +217,7 @@ step e (ECons v l)
 step e ENil = (ELst $ [], e)
 step e (EApp s lv) =
   case find s e of 
-   (EFunc f lp e1) -> step e (eApply lp lv e1 e)
+   (EFunc f lp e1) -> (eApply lp lv e1 e, e)
    _               -> (EErr $ "function" ++ s  ++ "is not declared", e)
 --call for variable declaration
 step e (ELet s v)
@@ -239,7 +235,8 @@ step e (EFunc s l e1)
 eApply :: [String] -> [Exp] -> Exp -> Env -> Exp
 eApply s v exp env 
   | not $ all value v = eApply s (map (\x -> if not $ value x then fst $ step env x else x) v) exp env
-  | otherwise         = fst $ (step ((zip s v)++env) exp)
+  | value exp         = exp
+  | otherwise         = eApply s v (fst $ step ((zip s v)++env) exp) env
 {--
   let x = 5 in x + 1
   ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
