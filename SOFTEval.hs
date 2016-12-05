@@ -111,7 +111,7 @@ instance Show Exp where
     show (ERst l)     = "[" ++ (show l) ++ "]"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)
-    show (EIf b e1 e2) = "if" ++ (show b) ++ "then" ++ (show e1) ++ "else" ++ (show e2)
+    show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
 
 
@@ -128,13 +128,6 @@ value (EClos _)       = True
 value (EFunc _ _ _) = False
 value (ELet _ _)    = False
 value _           = False
-
-find :: String -> Env -> Exp
-find _ []       = EErr "Variable has not been declared"
---find "" []       = EErr "Function has not been declared"
-find s ((s1, v1):xs)
-  | s == s1   = v1
-  | otherwise = find s xs
 
 step :: Env ->  Exp -> (Exp, Env)
 step e (EInt  n) = (EInt n, e)
@@ -217,13 +210,20 @@ step e (ECons v l)
       ENil     -> (ELst $ v: [], e)
       _        -> (EErr "cons takes a value and a list", e)
 step e ENil = (ELst $ [], e)
+step e (EIf b e1 e2)
+  | not $ value b = step e (EIf (fst $ step e b) e1 e2)
+  | otherwise     = 
+     case b of 
+      EBool b1 -> if b1 then step e e1 else step e e2
+      _        -> (EErr "If not given a boolean value", e)
 step e (EApp s lv) =
   case find s e of 
    (EFunc f lp e1) -> (eApply lp lv e1 e, e)
    _               -> (EErr $ "function" ++ s  ++ "is not declared", e)
 --call for variable declaration
 step e (ELet s v)
-  | value v        = (v, (s,v):e)
+  | existsIn s e   = (ENil, findAndReplace s v e)
+  | value v        = (ENil, (s,v):e)
   | otherwise      =
      case v of
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e)
@@ -232,18 +232,30 @@ step e (ELet s v)
 --call for function declaration
 step e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e)
+  | existsIn s e = (ENil, findAndReplace s (EFunc s l e1) e) 
   | otherwise = (ENil, (s, (EFunc s l e1)):e)
-step e (EIf b e1 e2)
-  | not $ value b = step e (EIf (fst $ step e b) e1 e2)
-  | otherwise     = 
-     case b of 
-      EBool b1 -> if b1 then step e e1 else step e e2
-      _        -> (EErr "If not given a boolean value", e)
 eApply :: [String] -> [Exp] -> Exp -> Env -> Exp
 eApply s v exp env 
   | not $ all value v = eApply s (map (\x -> if not $ value x then fst $ step env x else x) v) exp env
   | value exp         = exp
   | otherwise         = eApply s v (fst $ step ((zip s v)++env) exp) env
+
+existsIn :: String -> Env -> Bool
+existsIn _ []   = False
+existsIn s ((s1, _):xs)
+  | s==s1     = True
+  | otherwise = existsIn s xs
+
+find :: String -> Env -> Exp
+find _ []       = EErr "Variable has not been declared"
+find s ((s1, v1):xs)
+  | s == s1   = v1
+  | otherwise = find s xs
+
+findAndReplace :: String -> Exp -> Env -> Env  
+findAndReplace s v ((s1, v1):xs)
+  | s == s1   = (s1, v):xs
+  | otherwise = findAndReplace s v xs
 {--
   let x = 5 in x + 1
   ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
