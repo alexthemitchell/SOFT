@@ -1,6 +1,7 @@
 import Prelude
 import SOFTGrammar
 import SOFTLexer
+import SOFTEval
 import System.IO
 import System.Environment
 
@@ -37,8 +38,19 @@ runRepl :: IO ()
 runRepl = until_ (== "quit") (readPrompt ">> ") evalAndPrint
 
 runCode :: [String] -> IO ()
-runCode [x] = evalAndPrint x
-runCode (x:xs) = do
-  evalAndPrint x
-  runCode xs
+runCode l = do 
+  let tokenizedInput  = map lexer l
+  print $ runCodeKernel [] tokenizedInput
 
+runCodeKernel :: Env -> [[Token]] -> Exp
+runCodeKernel e [x] = do
+  let monad = parse x
+  case monad of
+    (Ok m) -> fst $ step e m
+    (Failed s) -> EErr s
+runCodeKernel e (x:xs) = do
+  let monad = parse x
+  case monad of 
+    (Ok m) -> (\(_, env) -> runCodeKernel env xs) $ step e m 
+    (Failed s) -> EErr s
+ 
