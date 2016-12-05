@@ -8,7 +8,7 @@
 
 ### LET
 let i = 5
-#let f = 3.14
+let f = 3.14
 let b1 = true
 let ls = [true, false]
 let b2 = b1
@@ -42,14 +42,14 @@ let ls = [0,1]
 
 ### NUMBER OPERATORS
 1 + 5
-# 1.45 + 45
+1.45 + 45
 
 5-5
 let one = 1
 one - 5
 one - 5 - -4
 
-# let pi = 3.141592653579
+let pi = 3.141592653579
 let r = 100
 let area = pi * r * r
 area
