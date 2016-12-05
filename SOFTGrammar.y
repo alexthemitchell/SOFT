@@ -62,11 +62,11 @@ Cmd     : Exp         { $1 }
 
 Exp     : let var '=' Closure                         { ELet $2 $4 }
         | function var '(' Parameters ')' '{' Exp '}' { EFunc $2 (reverse $4) $7} 
+        | Closure                                     { $1 }
         | if Exp then Exp else Exp                    { EIf $2 $4 $6 }
         | first Exp                                   { EFst $2 }
         | rest Exp                                    { ERst $2 }
         | empty Exp                                   { EEmt $2 }
-        | Closure                                     { $1 }
 
 Closure : '(' Exp ')'       { $2 }
         | List              { $1 } 
@@ -83,23 +83,22 @@ Parameters : Parameters ',' var  { $3 : $1 }
            | var                 { [$1] }
            | {- empty -}         { [] }
 
-BOpNum  : Value '+' BOpNum   { EBinop $1 BAdd $3 }
-        | Value '-' BOpNum   { EBinop $1 BSub $3 }
-        | Value '*' BOpNum   { EBinop $1 BMul $3 }
-        | Value '/' BOpNum   { EBinop $1 BDiv $3 }
-        | Value 'mod' BOpNum { EBinop $1 BMod $3 }
-        | Value '==' BOpNum  { EBinop $1 BEql $3 }
-        | Value '<' BOpNum   { EBinop $1 BLtn $3 }
-        | Value '>' BOpNum   { EBinop $1 BGtn $3 }
-        | Value '>=' BOpNum  { EBinop $1 BGeq $3 }
-        | Value'<=' BOpNum   { EBinop $1 BLeq $3 }
+BOpNum  : Exp '+' Exp      { EBinop $1 BAdd $3 }
+        | Exp '-' Exp      { EBinop $1 BSub $3 }
+        | Exp '*' Exp      { EBinop $1 BMul $3 }
+        | Exp '/' Exp      { EBinop $1 BDiv $3 }
+        | Exp 'mod' Exp    { EBinop $1 BMod $3 }
+        | Exp '==' Exp     { EBinop $1 BEql $3 }
+        | Exp '<' Exp      { EBinop $1 BLtn $3 }
+        | Exp '>' Exp      { EBinop $1 BGtn $3 }
+        | Exp '>=' Exp     { EBinop $1 BGeq $3 }
+        | Exp '<=' Exp      { EBinop $1 BLeq $3 }
         | Value              { $1 }
         | BOpBool            { $1 }
 
-BOpBool : Value '==' BOpBool  { EBinop $1 BEql $3 }
-        | Value 'and' BOpBool { EBinop $1 BAnd $3 }
-        | Value 'or' BOpBool  { EBinop $1 BOr $3 }
-        |'not' Value          { ENot $2 }
+BOpBool : Exp 'and' Exp     { EBinop $1 BAnd $3 }
+        | Exp 'or' Exp      { EBinop $1 BOr $3 }
+        |'not' Exp          { ENot $2 }
         | Value               { $1 }
 
 
