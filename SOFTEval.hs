@@ -124,6 +124,7 @@ step e (EFlt  f) = (EFlt f, e)
 step e (EBool b) = (EBool b, e)
 step e (EChar c) = (EChar c, e)
 step e (EStr  s) = (EStr s, e)
+--step e (ELst []) = (ENil, e)
 step e (ELst  l) = (ELst l, e)
 step v (EErr  e) = (EErr e, v)
 step e (EVar  s) = step e (find s e) --returns value associated with variable
@@ -176,17 +177,20 @@ step e (EFst l)
   | otherwise     =
      case l of
       (ELst (x:_)) -> step e x
+      ENil         -> (ENil, e)
       _            -> (EErr $ "first takes a list", e)
 step e (ERst l)
   | not $ value l = step e (ERst (fst $ step e l)) 
   | otherwise     =
      case l of
       (ELst (_:xs)) -> (ELst $ xs, e)
+      ENil          -> (ENil, e)
       _             -> (EErr $ "rest takes a list", e)
 step e (EEmt l)
   |not $ value l = (EEmt (fst $ step e l), e)
   |otherwise     =
     case l of
+     ELst [] -> (EBool True, e)
      ENil -> (EBool True, e)
      _    -> (EBool False, e)
 step e (ECons v l)
