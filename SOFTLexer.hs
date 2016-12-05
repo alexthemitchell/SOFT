@@ -49,7 +49,7 @@ lexer ('"':cs)         = lexStr cs
 lexer (c:cs)
       | isSpace c      = lexer cs
       | isAlpha c      = lexVar (c:cs)
-      | isDigit c      = lexNum (c:cs)
+      | isDigit c || c =='.'      = lexNum (c:cs)
 lexer ('+':cs)         = TokenPlus : lexer cs
 lexer ('-':cs)         = TokenMinus : lexer cs
 lexer ('*':cs)         = TokenAsterisk : lexer cs
@@ -73,7 +73,7 @@ lexer (',':cs)         = TokenComma : lexer cs
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
   where (str, rest) = span (\x -> x /= '"') cs
 
-lexNum cs = if any (=='.') cs then TokenFlt (read num) : lexer rest else TokenInt (read num) : lexer rest
+lexNum cs = if any (=='.') num then TokenFlt (read $ "0" ++ num) : lexer rest else TokenInt (read num) : lexer rest
     where (num,rest) = span (\x-> isDigit x || x =='.') cs
 
 lexVar cs =
