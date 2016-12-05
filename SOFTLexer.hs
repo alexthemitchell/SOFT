@@ -28,6 +28,12 @@ data Token
       | TokenAnd
       | TokenOr
       | TokenNot
+      | TokenIf
+      | TokenThen
+      | TokenFst
+      | TokenEmp
+      | TokenRst
+      | TokenElse
       | TokenFSlash
       | TokenLParen
       | TokenRParen
@@ -87,5 +93,11 @@ lexVar cs =
       ("and", rest)   -> TokenAnd : lexer rest
       ("or", rest)    -> TokenOr : lexer rest
       ("not", rest)   -> TokenNot : lexer rest
+      ("if", rest)    -> TokenIf : lexer rest
+      ("then", rest)  -> TokenThen : lexer rest
+      ("else", rest)  -> TokenElse : lexer rest
+      ("first", rest) -> TokenFst  : lexer rest
+      ("empty", rest) -> TokenEmp  : lexer rest
+      ("rest" , rest) -> TokenRst  : lexer rest
       ("function", rest) -> TokenFunction : lexer rest
       (var,rest)      -> TokenVar var : lexer rest

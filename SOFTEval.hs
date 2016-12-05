@@ -57,13 +57,6 @@ data Exp where
   ECons :: Exp -> Exp -> Exp --takes two ELsts
   ENil  :: Exp
   -- Let Statements
-{--
-  let x = 5 in x + 1
-  ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
-
-  let f(x) = x+1 in f(0)
-  EFunc f [x] (EAdd (EVar "x") (EInt 1)) (EApp f [0]))
---}
   ELet  :: String -> Exp -> Exp -- let x = e1
   EVar  :: String -> Exp --x
   EPar  :: String -> Exp
@@ -71,7 +64,6 @@ data Exp where
   --General Operations
   EApp  :: String -> [Exp] -> Exp --Applies given function to expressio
   EIf   :: Exp -> Exp -> Exp -> Exp
- -- EApp  :: Exp -> [Exp] -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
 
 type Env = [(String, Exp)]
@@ -108,7 +100,7 @@ instance Show Exp where
     show (ENot e)     = "not " ++ (show e)
     show (EFst l)     = "first " ++ (show l)
     show ENil         = ""
-    show (ERst l)     = "[" ++ (show l) ++ "]"
+    show (ERst l)     = show l 
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)
     show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
@@ -121,12 +113,9 @@ value (EFlt _)        = True
 value (EBool _)       = True
 value (EChar _)       = True
 value (EStr _)        = True
-value (ELst l)        = all value l --all :: (a -> Bool) -> [a] -> Bool
+value (ELst l)        = True--all value l --all :: (a -> Bool) -> [a] -> Bool
 value (EErr _)        = True
-value (EVar _)        = False 
 value (EClos _)       = True
-value (EFunc _ _ _) = False
-value (ELet _ _)    = False
 value _           = False
 
 step :: Env ->  Exp -> (Exp, Env)
@@ -137,9 +126,8 @@ step e (EChar c) = (EChar c, e)
 step e (EStr  s) = (EStr s, e)
 step e (ELst  l) = (ELst l, e)
 step v (EErr  e) = (EErr e, v)
-step e (EVar  s) = step e (find s e)
+step e (EVar  s) = step e (find s e) --returns value associated with variable
 step e (EPar  s) = step e (find s e)
---returns value associated with variable
 step e (EBinop e1 op e2)
   | not $ value e1 = (EBinop (fst $ step e e1) op e2, e)
   | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
@@ -190,7 +178,7 @@ step e (EFst l)
       (ELst (x:_)) -> step e x
       _            -> (EErr $ "first takes a list", e)
 step e (ERst l)
-  | not $ value l = (ELst [(fst $ step e l)], e)
+  | not $ value l = step e (ERst (fst $ step e l)) 
   | otherwise     =
      case l of
       (ELst (_:xs)) -> (ELst $ xs, e)
@@ -216,6 +204,7 @@ step e (EIf b e1 e2)
      case b of 
       EBool b1 -> if b1 then step e e1 else step e e2
       _        -> (EErr "If not given a boolean value", e)
+--Applies defined function
 step e (EApp s lv) =
   case find s e of 
    (EFunc f lp e1) -> (eApply lp lv e1 e, e)
@@ -234,6 +223,7 @@ step e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e)
   | existsIn s e = (ENil, findAndReplace s (EFunc s l e1) e) 
   | otherwise = (ENil, (s, (EFunc s l e1)):e)
+
 eApply :: [String] -> [Exp] -> Exp -> Env -> Exp
 eApply s v exp env 
   | not $ all value v = eApply s (map (\x -> if not $ value x then fst $ step env x else x) v) exp env
@@ -256,17 +246,6 @@ findAndReplace :: String -> Exp -> Env -> Env
 findAndReplace s v ((s1, v1):xs)
   | s == s1   = (s1, v):xs
   | otherwise = findAndReplace s v xs
-{--
-  let x = 5 in x + 1
-  ELet "x" (EInt 5) (EAdd (EVar "x") (EInt 1))
-
-  let f(x) = x+1 in f(0)
-  EFunc f [x] (EAdd (EVar "x") (EInt 1)) (EApp f [0]))
-  EApp  :: String -> [Exp] -> Exp
-  ELet  :: String -> Exp -> Exp -> Exp -- let x = e1 in e2
-  EVar  :: String -> Exp --x
-  EFunc :: String -> [String] ->  Exp -> Exp -> Exp -- let f(x1, ..., xn) = e1 in e2
-	--}
   
 evaluate :: Env -> Exp -> (Exp, Env)
 evaluate env exp
