@@ -69,7 +69,8 @@ data Exp where
   EPar  :: String -> Exp
   EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations
-  EApp  :: String -> [Exp] -> Exp --Applies given function to expression
+  EApp  :: String -> [Exp] -> Exp --Applies given function to expressio
+  EIf   :: Exp -> Exp -> Exp -> Exp
  -- EApp  :: Exp -> [Exp] -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
 
@@ -110,6 +111,7 @@ instance Show Exp where
     show (ERst l)     = "[" ++ (show l) ++ "]"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)
+    show (EIf b e1 e2) = "if" ++ (show b) ++ "then" ++ (show e1) ++ "else" ++ (show e2)
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
 
 
@@ -230,8 +232,13 @@ step e (ELet s v)
 --call for function declaration
 step e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e)
-  | otherwise = (ENil, (s, (EFunc s l e1)):e) 
-
+  | otherwise = (ENil, (s, (EFunc s l e1)):e)
+step e (EIf b e1 e2)
+  | not $ value b = step e (EIf (fst $ step e b) e1 e2)
+  | otherwise     = 
+     case b of 
+      EBool b1 -> if b1 then step e e1 else step e e2
+      _        -> (EErr "If not given a boolean value", e)
 eApply :: [String] -> [Exp] -> Exp -> Env -> Exp
 eApply s v exp env 
   | not $ all value v = eApply s (map (\x -> if not $ value x then fst $ step env x else x) v) exp env

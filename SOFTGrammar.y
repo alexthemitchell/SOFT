@@ -36,6 +36,9 @@ import SOFTEval
   'and'     { TokenAnd }
   'or'      { TokenOr  }
   'not'     { TokenNot }
+  if      { TokenIf  }
+  then    { TokenThen }
+  else    { TokenElse }
   '/'       { TokenFSlash }
   '('       { TokenLParen }
   ')'       { TokenRParen }
@@ -55,7 +58,8 @@ Cmd     : Exp         { $1 }
         | '#'         { ENil }
 
 Exp     : let var '=' Closure                         { ELet $2 $4 }
-        | function var '(' Parameters ')' '{' Exp '}' { EFunc $2 (reverse $4) $7 }
+        | function var '(' Parameters ')' '{' Exp '}' { EFunc $2 (reverse $4) $7} 
+        | if Exp then Exp else Exp              { EIf $2 $4 $6 }
         | Closure                                     { $1 }
 
 Closure : '(' Exp ')'       { $2 }
