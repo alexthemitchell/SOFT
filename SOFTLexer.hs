@@ -46,18 +46,28 @@ data Token
       | TokenNewline
  deriving Show
 
+--Helper functions for parsing numbers--
+isNumSymbol :: Char -> Bool
+isNumSymbol c = isDigit c || c == '.' || c == '-'
+
+fixFloat :: String -> String
+fixFloat ('.':xs) = '0':'.':xs
+fixFloat ('-':'.':xs) = '-':'0':'.':xs
+fixFloat str = str
+
+
 -- Lexer --
 lexer :: String -> [Token]
 lexer []               = []
 lexer ('\n':cs)        = [TokenNewline]
 lexer ('#':cs)         = [TokenComment]
 lexer ('"':cs)         = lexStr cs
+lexer (' ':'-':cs)         = TokenMinus : lexer cs --someone should fix this (-3 - -3) results in parse error
 lexer (c:cs)
       | isSpace c      = lexer cs
       | isAlpha c      = lexVar (c:cs)
-      | isDigit c || c =='.'      = lexNum (c:cs)
+      | isNumSymbol c  = lexNum (c:cs)
 lexer ('+':cs)         = TokenPlus : lexer cs
-lexer ('-':cs)         = TokenMinus : lexer cs
 lexer ('*':cs)         = TokenAsterisk : lexer cs
 lexer ('/':cs)         = TokenFSlash : lexer cs
 lexer ('\'':x:'\'':cs) = TokenChar x : lexer cs
@@ -79,8 +89,11 @@ lexer (',':cs)         = TokenComma : lexer cs
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
   where (str, rest) = span (\x -> x /= '"') cs
 
-lexNum cs = if any (=='.') num then TokenFlt (read $ "0" ++ num) : lexer rest else TokenInt (read num) : lexer rest
-    where (num,rest) = span (\x-> isDigit x || x =='.') cs
+lexNum cs
+  | any (=='.') num   =  TokenFlt (read $ fixFloat num) : lexer rest
+  | otherwise         =  TokenInt (read num) : lexer rest
+  where (num,rest)    =  span isNumSymbol cs
+
 
 lexVar cs =
    case span isAlpha cs of
