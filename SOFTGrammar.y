@@ -22,7 +22,6 @@ import SOFTEval
   var       { TokenVar $$ }
   true      { TokenTrue }
   false     { TokenFalse }
-  '#'       { TokenComment }
   '='       { TokenEqual }
   '=='      { TokenDoubleEqual }
   '+'       { TokenPlus }
@@ -58,7 +57,6 @@ import SOFTEval
 %%
 Cmd     : Exp         { $1 }
         | {- Empty -} { ENil }
-        | '#'         { ENil }
 
 Exp     : let var '=' Closure                         { ELet $2 $4 }
         | function var '(' Parameters ')' '{' Exp '}' { EFunc $2 (reverse $4) $7} 

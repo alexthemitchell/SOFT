@@ -14,7 +14,6 @@ data Token
       | TokenLet
       | TokenTrue
       | TokenFalse
-      | TokenComment
       | TokenEqual
       | TokenDoubleEqual
       | TokenPlus
@@ -60,7 +59,7 @@ fixFloat str = str
 lexer :: String -> [Token]
 lexer []               = []
 lexer ('\n':cs)        = [TokenNewline]
-lexer ('#':cs)         = [TokenComment]
+lexer ('#':cs)         = lexComment cs
 lexer ('"':cs)         = lexStr cs
 lexer (' ':'-':cs)         = TokenMinus : lexer cs --someone should fix this (-3 - -3) results in parse error
 lexer (c:cs)
@@ -85,6 +84,11 @@ lexer ('<':cs)         = TokenLT : lexer cs
 lexer ('>':cs)         = TokenGT : lexer cs
 lexer ('=':cs)         = TokenEqual : lexer cs
 lexer (',':cs)         = TokenComma : lexer cs
+
+lexComment :: String -> [Token] 
+lexComment [] = []
+lexComment ('\n':cs) = lexer cs
+lexComment (c:cs) = lexComment cs
 
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
   where (str, rest) = span (\x -> x /= '"') cs
