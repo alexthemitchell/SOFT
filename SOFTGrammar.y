@@ -54,7 +54,13 @@ import SOFTEval
   ','       { TokenComma }
   str       { TokenStr $$ }
   '\n'      { TokenNewline }
+
+%right in
+%nonassoc '>' '<' '<=' '>='
+%left '+' '-'
+%left '*' '/'
 %%
+
 Cmd     : Exp         { $1 }
         | {- Empty -} { ENil }
 
