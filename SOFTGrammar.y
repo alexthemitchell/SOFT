@@ -84,6 +84,7 @@ Parameters : Parameters ',' var  { $3 : $1 }
            | {- empty -}         { [] }
 
 BOpNum  : Exp '+' Exp      { EBinop $1 BAdd $3 }
+        | Exp '-' '-' Exp  { EBinop $1 BAdd $4 }
         | Exp '-' Exp      { EBinop $1 BSub $3 }
         | Exp '*' Exp      { EBinop $1 BMul $3 }
         | Exp '/' Exp      { EBinop $1 BDiv $3 }
