@@ -61,7 +61,7 @@ lexer []               = []
 lexer ('\n':cs)        = [TokenNewline]
 lexer ('#':cs)         = lexComment cs
 lexer ('"':cs)         = lexStr cs
-lexer (' ':'-':cs)         = TokenMinus : lexer cs --someone should fix this (-3 - -3) results in parse error
+lexer (' ':'-':cs)     = TokenMinus : lexer cs
 lexer (c:cs)
       | isSpace c      = lexer cs
       | isAlpha c      = lexVar (c:cs)
