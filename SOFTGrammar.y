@@ -84,7 +84,6 @@ Parameters : Parameters ',' var  { $3 : $1 }
            | {- empty -}         { [] }
 
 BOpNum  : Exp '+' Exp      { EBinop $1 BAdd $3 }
-        | Exp '-' '-' Exp  { EBinop $1 BAdd $4 }
         | Exp '-' Exp      { EBinop $1 BSub $3 }
         | Exp '*' Exp      { EBinop $1 BMul $3 }
         | Exp '/' Exp      { EBinop $1 BDiv $3 }
@@ -103,7 +102,9 @@ BOpBool : Exp 'and' Exp     { EBinop $1 BAnd $3 }
         | Value               { $1 }
 
 
-Value   : int               { EInt $1 }
+Value   : '-' int           { EInt $ negate $2 }
+        | '-' float         { EFlt $ negate $2 }
+       	| int               { EInt $1 }
         | float             { EFlt $1 }
         | char              { EChar $1 }
         | var '(' ListLiteral ')' {EApp $1 $3}
