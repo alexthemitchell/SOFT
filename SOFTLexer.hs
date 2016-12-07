@@ -45,15 +45,8 @@ data Token
       | TokenNewline
  deriving Show
 
---Helper functions for parsing numbers--
 isNumSymbol :: Char -> Bool
-isNumSymbol c = isDigit c || c == '.' || c == '-'
-
-fixFloat :: String -> String
-fixFloat ('.':xs) = '0':'.':xs
-fixFloat ('-':'.':xs) = '-':'0':'.':xs
-fixFloat str = str
-
+isNumSymbol c = isDigit c || c == '.'
 
 -- Lexer --
 lexer :: String -> [Token]
@@ -61,12 +54,12 @@ lexer []               = []
 lexer ('\n':cs)        = [TokenNewline]
 lexer ('#':cs)         = lexComment cs
 lexer ('"':cs)         = lexStr cs
-lexer ('-':cs)         = TokenMinus : lexer cs
 lexer (c:cs)
       | isSpace c      = lexer cs
       | isAlpha c      = lexVar (c:cs)
       | isNumSymbol c  = lexNum (c:cs)
 lexer ('+':cs)         = TokenPlus : lexer cs
+lexer ('-':cs)         = TokenMinus : lexer cs
 lexer ('*':cs)         = TokenAsterisk : lexer cs
 lexer ('/':cs)         = TokenFSlash : lexer cs
 lexer ('\'':x:'\'':cs) = TokenChar x : lexer cs
@@ -94,8 +87,8 @@ lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer
   where (str, rest) = span (\x -> x /= '"') cs
 
 lexNum cs
-  | any (=='.') num   =  TokenFlt (read $ fixFloat num) : lexer rest
-  | otherwise         =  TokenInt (read num) : lexer rest
+  | any (=='.') num   =  TokenFlt (read $ '0': num) : lexer rest
+  | otherwise         =  TokenInt (read num)            : lexer rest
   where (num,rest)    =  span isNumSymbol cs
 
 
