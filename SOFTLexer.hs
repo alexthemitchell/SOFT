@@ -61,7 +61,7 @@ lexer []               = []
 lexer ('\n':cs)        = [TokenNewline]
 lexer ('#':cs)         = lexComment cs
 lexer ('"':cs)         = lexStr cs
-lexer (' ':'-':cs)     = TokenMinus : lexer cs
+lexer ('-':cs)         = TokenMinus : lexer cs
 lexer (c:cs)
       | isSpace c      = lexer cs
       | isAlpha c      = lexVar (c:cs)
@@ -85,7 +85,7 @@ lexer ('>':cs)         = TokenGT : lexer cs
 lexer ('=':cs)         = TokenEqual : lexer cs
 lexer (',':cs)         = TokenComma : lexer cs
 
-lexComment :: String -> [Token] 
+lexComment :: String -> [Token]
 lexComment [] = []
 lexComment ('\n':cs) = lexer cs
 lexComment (c:cs) = lexComment cs
