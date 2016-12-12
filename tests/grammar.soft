@@ -76,7 +76,7 @@ let z = 3
 let b1 = (x == z)
 let b2 = (x == y)
 let b3 = (z == 4)
-let b4 = {y == 5}
+let b4 = (y == 5)
 
 let and1 = and (b1, b2, b3, b4)
 let and2 = and (b1, b4)
@@ -104,7 +104,7 @@ function NegPosZero (x) {
     Positive
 }
 
-### SHOW
-show (mult([1,2,3,4]))
+### explain 
+explain (mult([1,2,3,4]))
 
 
