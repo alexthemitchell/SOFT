@@ -36,9 +36,9 @@ empty (ls3)
 
 ### :
 let ls = [0,1]
- # ls:3          # PARSE ERROR ON THIS LINE, CONSING A VAR
- # -1:ls:2
- # 1:nil
+3:ls
+-1:ls:2
+1:nil
 
 ### NUMBER OPERATORS
 1 + 5

@@ -79,7 +79,7 @@ Closure : '(' Exp ')'       { $2 }
         | BOpNum            { $1 }
 
 List : '[' ListLiteral ']' { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
-     | Closure ':' List    { ECons $1 $3 }
+     | Closure ':' Closure    { ECons $1 $3 }
 
 ListLiteral : ListLiteral ',' Exp    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
             | Exp                    { [$1] }
