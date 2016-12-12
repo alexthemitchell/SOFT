@@ -33,6 +33,7 @@ data Token
       | TokenEmp
       | TokenRst
       | TokenElse
+      | TokenExp
       | TokenFSlash
       | TokenLParen
       | TokenRParen
@@ -93,7 +94,7 @@ lexNum cs
 
 
 lexVar cs =
-	case span (\x->isAlpha x || isNumSymbol x) cs of
+  case span (\x->isAlpha x || isNumSymbol x) cs of
       ("nil",rest)    -> TokenNil : lexer rest
       (":",rest)      -> TokenCons : lexer rest
       ("let",rest)    -> TokenLet : lexer rest
@@ -109,5 +110,6 @@ lexVar cs =
       ("first", rest) -> TokenFst  : lexer rest
       ("empty", rest) -> TokenEmp  : lexer rest
       ("rest" , rest) -> TokenRst  : lexer rest
+      ("explain", rest) -> TokenExp : lexer rest
       ("function", rest) -> TokenFunction : lexer rest
       (var,rest)      -> TokenVar var : lexer rest

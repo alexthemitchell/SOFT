@@ -41,6 +41,7 @@ import SOFTEval
   first     { TokenFst }
   rest      { TokenRst }
   empty     { TokenEmp }
+  explain   { TokenExp }
   '/'       { TokenFSlash }
   '('       { TokenLParen }
   ')'       { TokenRParen }
@@ -71,7 +72,8 @@ Exp     : let var '=' Closure                         { ELet $2 $4 }
         | first Exp                                   { EFst $2 }
         | rest Exp                                    { ERst $2 }
         | empty Exp                                   { EEmt $2 }
-
+        | explain Exp                                 { EExpl $2 }
+        
 Closure : '(' Exp ')'       { $2 }
         | List              { $1 } 
         | BOpNum            { $1 }
