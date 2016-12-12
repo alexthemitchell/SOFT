@@ -1,6 +1,7 @@
 {-# Language GADTs #-}
 module SOFTEval where
 import SOFTLexer
+import Prelude hiding (fst, snd)
 --import Data.Global
 import Data.IORef
 
@@ -63,6 +64,7 @@ data Exp where
   EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations
   EApp  :: String -> [Exp] -> Exp --Applies given function to expressio
+  EExpl :: Exp -> Exp
   EIf   :: Exp -> Exp -> Exp -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
 
@@ -80,7 +82,7 @@ instance Show Exp where
     show (EStr s)  = s
     show (ELst []) ="[]"
     show (ELst l) = show l
-    show (EVar v) = show v 
+    show (EVar v) = show v  
     show (EPar p) = show p
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) =
@@ -105,7 +107,8 @@ instance Show Exp where
     show (EEmt l)     = "empty " ++ (show l)
     show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
-
+    show (EApp x e) = x ++ "( " ++ (show e) ++ ")"
+    show (EExpl e)  = (show e)
 
 value :: Exp -> Bool
 value (EInt _)        = True
@@ -118,129 +121,130 @@ value (EErr _)        = True
 value (EClos _)       = True
 value _           = False
 
-step :: Env ->  Exp -> (Exp, Env)
-step e (EInt  n) = (EInt n, e)
-step e (EFlt  f) = (EFlt f, e)
-step e (EBool b) = (EBool b, e)
-step e (EChar c) = (EChar c, e)
-step e (EStr  s) = (EStr s, e)
---step e (ELst []) = (ENil, e)
-step e (ELst  l) = (ELst l, e)
-step v (EErr  e) = (EErr e, v)
-step e (EVar  s) = step e (find s e) --returns value associated with variable
-step e (EPar  s) = step e (find s e)
-step e (EBinop e1 op e2)
-  | not $ value e1 = (EBinop (fst $ step e e1) op e2, e)
-  | not $ value e2 = (EBinop e1 op (fst $ step e e2), e)
+type Buffer = [String]
+
+step :: Bool-> Buffer -> Env ->  Exp -> (Exp, Env, Buffer)
+step d pb e (EInt  n) = (EInt n, e, if d then (show n):pb else pb)
+step d pb e (EFlt  f) = (EFlt f, e, if d then (show f):pb else pb)
+step d pb e (EBool b) = (EBool b, e, if d then (show b):pb else pb)
+step d pb e (EChar c) = (EChar c, e, if d then (show c):pb else pb)
+step d pb e (EStr  s) = (EStr s, e, if d then (show s):pb else pb)
+step d pb e (ELst  l) = (ELst l, e, if d then (show l):pb else pb)
+step d pb v (EErr  e) = (EErr e, v, if d then (show e):pb else pb)
+step d pb e (EVar  s) = (find s e, e, if d then s:(show(find s e)):pb else pb) --returns value associated with variable
+step d pb e (EBinop e1 op e2)
+  | not $ value e1 = (EBinop (fst $ step d pb e e1) op e2, e, if d then (show (EBinop e1 op e2)):pb else pb )
+  | not $ value e2 = (EBinop e1 op (fst $ step d pb e e2), e, if d then (show (EBinop e1 op e2)):pb else pb )
   | otherwise      =
      case (e1, op ,e2) of
-       (EInt n1, BAdd, EInt n2) -> (EInt  $ n1 + n2, e)
-       (EInt n1, BAdd, EFlt f2) -> (EFlt  $ (fromIntegral n1) + f2, e)
-       (EFlt f1, BAdd, EInt n2) -> (EFlt  $ f1 + (fromIntegral n2), e)
-       (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2, e)
-       ( _     , BAdd, _      ) -> (EErr  $ "+ takes ints or floats", e)
-       (EInt n1, BSub, EInt n2) -> (EInt  $ n1 - n2, e)
-       (EFlt f1, BSub, EInt n2) -> (EFlt  $ f1 - (fromIntegral n2), e)
-       (EInt n1, BSub, EFlt f2) -> (EFlt  $ (fromIntegral n1) - f2, e)
-       (EFlt f1, BSub, EFlt f2) -> (EFlt  $ f1 - f2, e)
-       ( _     , BSub, _      ) -> (EErr  $ "- takes ints or floats", e)
-       (EInt n1, BMul, EInt n2) -> (EInt  $ n1 * n2, e)
-       (EFlt f1, BMul, EInt n2) -> (EFlt $ f1 * (fromIntegral n2), e)
-       (EInt n1, BMul, EFlt f2) -> (EFlt  $ (fromIntegral n1) * f2, e)
-       (EFlt f1, BMul, EFlt f2) -> (EFlt  $ f1 * f2, e)
-       ( _     , BMul, _      ) -> (EErr  $ "* takes ints or floats", e)
-       (EInt n1, BDiv, EInt n2) -> (EInt  $ n1 `div` n2, e)
-       (EFlt f1, BDiv, EFlt f2) -> (EFlt  $ f1 / f2, e)
-       (EInt n1, BDiv, EFlt f2) -> (EFlt  $ (fromIntegral n1) / f2, e)
-       (EFlt f1, BDiv, EInt n2) -> (EFlt  $ f1 / (fromIntegral n2), e)
-       ( _     , BDiv, _      ) -> (EErr  $ "/ takes ints or floats", e)
-       (EInt n1, BMod, EInt n2) -> (EInt  $ n1 `mod` n2, e)
-       ( _     , BMod, _      ) -> (EErr  $ "mod takes int, int", e)
-       (EInt n1, BEql, EInt n2) -> (EBool $ n1 == n2, e)
-       (EFlt f1, BEql, EFlt f2) -> (EBool  $ f1 == f2, e)
-       (EBool b1, BEql, EBool b2) -> (EBool $ b1 == b2, e)
-       (EStr s1, BEql, EStr s2)   -> (EBool  $ s1 == s2, e)
-       (EChar c1, BEql, EChar c2) -> (EBool $ c1 == c2, e)
-       ( _     , BEql, _      ) -> (EErr  $ "== takes two of the same type", e)
-       (EInt n1, BLtn, EInt n2) -> (EBool $ n1 < n2, e)
-       ( _     , BLtn, _      ) -> (EErr  $ "< takes int, int", e)
-       (EInt n1, BGtn, EInt n2) -> (EBool $ n1 > n2, e)
-       ( _     , BGtn, _      ) -> (EErr  $ "> takes int, int", e)
-       (EInt n1, BLeq, EInt n2) -> (EBool $ n1 <= n2, e)
-       ( _     , BLeq, _      ) -> (EErr  $ "<= takes int, int", e)
-       (EInt n1, BGeq, EInt n2) -> (EBool $ n1 >= n2, e)
-       ( _     , BGeq, _      ) -> (EErr  $ ">= takes int, int", e)
-       (EBool b1, BAnd, EBool b2) -> (EBool $ b1 && b2, e)
-       ( _      , BAnd, _      ) -> (EErr  $ "and takes bool, bool", e)
-       (EBool b1, BOr , EBool b2) -> (EBool $ b1 || b2, e)
-       ( _      , BOr , _      ) -> (EErr  $ "or takes bool, bool", e)
-step e (ENot b)
-  |not $ value b = (ENot (fst $ step e b), e)
+       (EInt n1, BAdd, EInt n2) -> (EInt $ n1 + n2, e, (if d then ((show n1) ++ "+" ++ (show n2)):pb else pb))
+       (EInt n1, BAdd, EFlt f2) -> (EFlt  $ (fromIntegral n1) + f2, e, (if d then ((show n1) ++ "+" ++ (show f2)):pb else pb))
+       (EFlt f1, BAdd, EInt n2) -> (EFlt  $ f1 + (fromIntegral n2),e, (if d then ((show f1) ++ "+" ++ (show n2)):pb else pb))
+       (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2,e, (if d then ((show f1) ++ "+" ++ (show f2)):pb else pb))
+       ( _     , BAdd, _      ) -> (EErr  $ "+ takes ints or floats",e,pb)
+       (EInt n1, BSub, EInt n2) -> (EInt  $ n1 - n2, e, (if d then ((show n1) ++ "-" ++ (show n2)):pb else pb))
+       (EFlt f1, BSub, EInt n2) -> (EFlt  $ f1 - (fromIntegral n2),e, (if d then ((show f1) ++ "-" ++ (show n2)):pb else pb))
+       (EInt n1, BSub, EFlt f2) -> (EFlt  $ (fromIntegral n1) - f2,e, (if d then ((show n1) ++ "-" ++ (show f2)):pb else pb))
+       (EFlt f1, BSub, EFlt f2) -> (EFlt  $ f1 - f2,e, (if d then ((show f1) ++ "-" ++ (show f2)):pb else pb))
+       ( _     , BSub, _      ) -> (EErr  $ "- takes ints or floats",e, pb)
+       (EInt n1, BMul, EInt n2) -> (EInt  $ n1 * n2,e, (if d then ((show n1) ++ "*" ++ (show n2)):pb else pb))
+       (EFlt f1, BMul, EInt n2) -> (EFlt $ f1 * (fromIntegral n2),e, (if d then ((show f1) ++ "*" ++ (show n2)):pb else pb))
+       (EInt n1, BMul, EFlt f2) -> (EFlt  $ (fromIntegral n1) * f2,e, (if d then ((show n1) ++ "*" ++ (show f2)):pb else pb))
+       (EFlt f1, BMul, EFlt f2) -> (EFlt  $ f1 * f2,e, (if d then ((show f1) ++ "*" ++ (show f2)):pb else pb))
+       ( _     , BMul, _      ) -> (EErr  $ "* takes ints or floats",e, pb)
+       (EInt n1, BDiv, EInt n2) -> (EInt  $ n1 `div` n2,e, (if d then ((show n1) ++ "/" ++ (show n2)):pb else pb))
+       (EFlt f1, BDiv, EFlt f2) -> (EFlt  $ f1 / f2,e, (if d then ((show f1) ++ "/" ++ (show f2)):pb else pb))
+       (EInt n1, BDiv, EFlt f2) -> (EFlt  $ (fromIntegral n1) / f2,e, (if d then ((show n1) ++ "/" ++ (show f2)):pb else pb))
+       (EFlt f1, BDiv, EInt n2) -> (EFlt  $ f1 / (fromIntegral n2),e, (if d then ((show f1) ++ "/" ++ (show n2)):pb else pb))
+       ( _     , BDiv, _      ) -> (EErr  $ "/ takes ints or floats",e,pb)
+       (EInt n1, BMod, EInt n2) -> (EInt  $ n1 `mod` n2,e, (if d then ((show n1) ++ "mod" ++ (show n2)):pb else pb))
+       ( _     , BMod, _      ) -> (EErr  $ "mod takes int, int",e,pb)
+       (EInt n1, BEql, EInt n2) -> (EBool $ n1 == n2,e, (if d then ((show n1) ++ "==" ++ (show n2)):pb else pb))
+       (EFlt f1, BEql, EFlt f2) -> (EBool  $ f1 == f2,e, (if d then ((show f1) ++ "==" ++ (show f2)):pb else pb))
+       (EBool b1, BEql, EBool b2) -> (EBool $ b1 == b2,e, (if d then ((show b1) ++ "==" ++ (show b2)):pb else pb))
+       (EStr s1, BEql, EStr s2)   -> (EBool  $ s1 == s2,e, (if d then ((show s1) ++ "==" ++ (show s2)):pb else pb))
+       (EChar c1, BEql, EChar c2) -> (EBool $ c1 == c2,e, (if d then ((show c1) ++ "==" ++ (show c2)):pb else pb))
+       ( _     , BEql, _      ) -> (EErr  $ "== takes two of the same type",e,pb)
+       (EInt n1, BLtn, EInt n2) -> (EBool $ n1 < n2,e, (if d then ((show n1) ++ "<" ++ (show n2)):pb else pb))
+       ( _     , BLtn, _      ) -> (EErr  $ "< takes int, int",e,pb)
+       (EInt n1, BGtn, EInt n2) -> (EBool $ n1 > n2,e, (if d then ((show n1) ++ ">" ++ (show n2)):pb else pb))
+       ( _     , BGtn, _      ) -> (EErr  $ "> takes int, int",e,pb)
+       (EInt n1, BLeq, EInt n2) -> (EBool $ n1 <= n2,e, (if d then ((show n1) ++ "≤" ++ (show n2)):pb else pb))
+       ( _     , BLeq, _      ) -> (EErr  $ "<= takes int, int",e,pb)
+       (EInt n1, BGeq, EInt n2) -> (EBool $ n1 >= n2,e, (if d then ((show n1) ++ "≥" ++ (show n2)):pb else pb))
+       ( _     , BGeq, _      ) -> (EErr  $ ">= takes int, int",e,pb)
+       (EBool b1, BAnd, EBool b2) -> (EBool $ b1 && b2,e, (if d then ((show b1) ++ "and" ++ (show b2)):pb else pb))
+       ( _      , BAnd, _      ) -> (EErr  $ "and takes bool, bool",e,pb)
+       (EBool b1, BOr , EBool b2) -> (EBool $ b1 || b2,e, (if d then ((show b1) ++ "or" ++ (show b2)):pb else pb))
+       ( _      , BOr , _      ) -> (EErr  $ "or takes bool, bool",e,pb)
+
+step d pb e (ENot b)
+  |not $ value b = (ENot (fst $ step d pb e b),e, if d then (show (ENot b):pb) else pb)
   |otherwise     =
      case b of
-       (EBool b1) -> (EBool $ not b1, e)
-       _          -> (EErr $ "not takes bool", e)
-step e (EFst l)
-  | not $ value l = (EFst (fst $ step e l), e)
+       (EBool b1) -> (EBool $ not b1,e, if d then (show (ENot b)):pb else pb)
+       _          -> (EErr $ "not takes bool", e, pb)
+step d pb e (EFst l)
+  | not $ value l = (EFst (fst $ step d pb e l), e, if d then (show l):pb else pb)
   | otherwise     =
      case l of
-      (ELst (x:_)) -> step e x
-      ENil         -> (ENil, e)
-      _            -> (EErr $ "first takes a list", e)
-step e (ERst l)
-  | not $ value l = step e (ERst (fst $ step e l)) 
+      (ELst (x:_)) -> step d pb e x
+      ENil         -> (ENil, e, if d then (show ENil):pb else pb)
+      _            -> (EErr $ "first takes a list", e, pb)
+step d pb e (ERst l)
+  | not $ value l = (ERst (fst $ step d pb e l), e, if d then (show l):pb else pb)
   | otherwise     =
      case l of
-      (ELst (_:xs)) -> (ELst $ xs, e)
-      ENil          -> (ENil, e)
-      _             -> (EErr $ "rest takes a list", e)
-step e (EEmt l)
-  |not $ value l = (EEmt (fst $ step e l), e)
+      (ELst (_:xs)) -> (ELst $ xs, e, if d then (show xs):pb else pb)
+      ENil          -> (ENil, e, if d then (show ENil):pb else pb)
+      _             -> (EErr $ "rest takes a list", e, pb)
+step d pb e (EEmt l)
+  |not $ value l = (EEmt (fst $ step d pb e l), e, if d then (show l):pb else pb)
   |otherwise     =
     case l of
-     ELst [] -> (EBool True, e)
-     ENil -> (EBool True, e)
-     _    -> (EBool False, e)
-step e (ECons v l)
-  |not $ value v = (ECons (fst $ step e v) l, e)
-  |not $ value l = (ECons v (fst $ step e l), e)
+     ELst [] -> (EBool True, e, if d then (show l):pb else pb)
+     ENil -> (EBool True, e, if d then (show ENil):pb else pb)
+     _    -> (EBool False, e, pb)
+step d pb e (ECons v l)
+  |not $ value v = (ECons (fst $ step d pb e v) l, e, if d then (show (ECons v l)):pb else pb)
+  |not $ value l = (ECons v (fst $ step d pb e l), e, if d then (show (ECons v l)):pb else pb)
   |otherwise     =
     case l of
-      (ELst l) -> (ELst $ v:l, e)
-      ENil     -> (ELst $ v: [], e)
-      _        -> (EErr "cons takes a value and a list", e)
-step e ENil = (ELst $ [], e)
-step e (EIf b e1 e2)
-  | not $ value b = step e (EIf (fst $ step e b) e1 e2)
+      (ELst l) -> (ELst $ v:l, e, if d then (show l):pb else pb)
+      ENil     -> (ELst $ v: [], e, if d then (show ENil):pb else pb)
+      _        -> (EErr "cons takes a value and a list", e, pb)
+step d pb e ENil = (ELst $ [],e, if d then (show ENil):pb else pb )
+step d pb e (EIf b e1 e2)
+  | not $ value b = step d pb e (EIf (fst $ step d pb e b) e1 e2)
   | otherwise     = 
      case b of 
-      EBool b1 -> if b1 then step e e1 else step e e2
-      _        -> (EErr "If not given a boolean value", e)
+      EBool b1 -> if b1 then step d pb e e1 else step d pb e e2
+      _        -> (EErr "If not given a boolean value", e, pb)
 --Applies defined function
-step e (EApp s lv) =
+step d pb e (EApp s lv) =
   case find s e of 
-   (EFunc f lp e1) -> (eApply lp lv e1 e, e)
-   _               -> (EErr $ "function" ++ s  ++ "is not declared", e)
+   (EFunc f lp e1) -> (eApply d pb lp lv e1 e, e, if d then (show (EApp s lv)):pb else pb)
+   _               -> (EErr $  "function" ++ s  ++ "is not declared", e, pb)
 --call for variable declaration
-step e (ELet s v)
-  | existsIn s e   = (ENil, findAndReplace s v e)
-  | value v        = (ENil, (s,v):e)
+step d pb e (ELet s v)
+  | existsIn s e   = (ENil, findAndReplace s v e, if d then (s ++ "declared as" ++ (show v)):pb else pb)
+  | value v        = (ENil, (s,v):e, if d then (s ++ "declared as" ++ (show v)):pb else pb)
   | otherwise      =
      case v of
-      (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e)
-      (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e)
-      _               -> (ELet s (fst $ step e v) , e)
+      (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e, pb)
+      (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e, pb)
+      _               -> (ELet s (fst $ step d pb e v) , e, pb)
 --call for function declaration
-step e (EFunc s l e1)
-  | value e1  = (EErr $ "cannot assign function to value", e)
-  | existsIn s e = (ENil, findAndReplace s (EFunc s l e1) e) 
-  | otherwise = (ENil, (s, (EFunc s l e1)):e)
+step d pb e (EFunc s l e1)
+  | value e1  = (EErr $ "cannot assign function to value", e, pb)
+  | existsIn s e = (ENil, findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb) 
+  | otherwise = (ENil, (s, (EFunc s l e1)):e, pb)
 
-eApply :: [String] -> [Exp] -> Exp -> Env -> Exp
-eApply s v exp env 
-  | not $ all value v = eApply s (map (\x -> if not $ value x then fst $ step env x else x) v) exp env
+eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> Exp
+eApply d pb s v exp env 
+  | not $ all value v = eApply d pb s (map (\x -> if not $ value x then fst $ step d pb env x else x) v) exp env
   | value exp         = exp
-  | otherwise         = eApply s v (fst $ step ((zip s v)++env) exp) env
+  | otherwise         = eApply d pb s v (fst $ step d pb ((zip s v)++env) exp) env
 
 existsIn :: String -> Env -> Bool
 existsIn _ []   = False
@@ -258,8 +262,18 @@ findAndReplace :: String -> Exp -> Env -> Env
 findAndReplace s v ((s1, v1):xs)
   | s == s1   = (s1, v):xs
   | otherwise = findAndReplace s v xs
+
+fst :: (a, b, c) -> a
+fst (x, y, z) = x
+
+snd :: (a, b, c) -> b
+snd (x, y, z) = y
+
+thd :: (a, b, c) -> c
+thd (x, y, z) = z
+
   
-evaluate :: Env -> Exp -> (Exp, Env)
-evaluate env exp
-  | not $ value exp = (\(ex, en) -> evaluate en ex) (step env exp)
-  | otherwise     =  (exp, env)
+evaluate :: Bool -> Env -> Exp -> (Exp, Env, Buffer)
+evaluate d env exp
+  | not $ value exp = (\(ex, en, pb) -> evaluate d en ex) (step d [] env exp)
+  | otherwise     =  (exp, env, [])
