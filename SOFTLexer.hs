@@ -93,7 +93,7 @@ lexNum cs
 
 
 lexVar cs =
-   case span isAlpha cs of
+	case span (\x->isAlpha x || isNumSymbol x) cs of
       ("nil",rest)    -> TokenNil : lexer rest
       (":",rest)      -> TokenCons : lexer rest
       ("let",rest)    -> TokenLet : lexer rest
