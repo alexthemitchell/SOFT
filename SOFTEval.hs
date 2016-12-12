@@ -82,7 +82,7 @@ instance Show Exp where
     show (EStr s)  = s
     show (ELst []) ="[]"
     show (ELst l) = show l
-    show (EVar v) = show v  
+    show (EVar v) = v  
     show (EPar p) = show p
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) =
@@ -131,7 +131,7 @@ step d pb e (EChar c) = (EChar c, e, if d then (show c):pb else pb)
 step d pb e (EStr  s) = (EStr s, e, if d then (show s):pb else pb)
 step d pb e (ELst  l) = (ELst l, e, if d then (show l):pb else pb)
 step d pb v (EErr  e) = (EErr e, v, if d then (show e):pb else pb)
-step d pb e (EVar  s) = (find s e, e, if d then s:(show(find s e)):pb else pb) --returns value associated with variable
+step d pb e (EVar  s) = (find s e, e, if d then s:pb else pb) --returns value associated with variable
 step d pb e (EBinop e1 op e2)
   | not $ value e1 = (EBinop (fst $ step d pb e e1) op e2, e, if d then (show (EBinop e1 op e2)):pb else pb )
   | not $ value e2 = (EBinop e1 op (fst $ step d pb e e2), e, if d then (show (EBinop e1 op e2)):pb else pb )
@@ -223,7 +223,9 @@ step d pb e (EIf b e1 e2)
 --Applies defined function
 step d pb e (EApp s lv) =
   case find s e of 
-   (EFunc f lp e1) -> (eApply d pb lp lv e1 e, e, if d then (show (EApp s lv)):pb else pb)
+   (EFunc f lp e1) -> do
+     let (ex, b) = eApply d [] lp lv e1 e
+     (ex, e, if d then b++(show (EApp s lv)):pb else pb)
    _               -> (EErr $  "function" ++ s  ++ "is not declared", e, pb)
 --call for variable declaration
 step d pb e (ELet s v)
@@ -240,11 +242,15 @@ step d pb e (EFunc s l e1)
   | existsIn s e = (ENil, findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb) 
   | otherwise = (ENil, (s, (EFunc s l e1)):e, pb)
 
-eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> Exp
+eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
 eApply d pb s v exp env 
-  | not $ all value v = eApply d pb s (map (\x -> if not $ value x then fst $ step d pb env x else x) v) exp env
-  | value exp         = exp
-  | otherwise         = eApply d pb s v (fst $ step d pb ((zip s v)++env) exp) env
+  | not $ all value v = do
+    let (ex, en, b) = step d pb env exp
+    eApply d b s (map (\x -> if not $ value x then ex else x) v) exp env
+  | value exp         = (exp, pb)
+  | otherwise         = do
+    let (ex, en, b) = step d pb ((zip s v)++env) exp
+    eApply d b s v ex env
 
 existsIn :: String -> Env -> Bool
 existsIn _ []   = False
