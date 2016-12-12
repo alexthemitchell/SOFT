@@ -1,4 +1,4 @@
-import Prelude
+import Prelude hiding(fst, snd)
 import SOFTGrammar
 import SOFTLexer
 import SOFTEval
@@ -18,7 +18,7 @@ until_ env pred prompt = do
           let monad = parse .lexer $ result
           case monad of 
             (Ok m) -> do
-              let (ex, en) = evaluate env m
+              let (ex, en, pb) = evaluate True env m 
               putStrLn $ show en
               putStrLn $ show ex
               until_ en pred prompt
@@ -50,15 +50,15 @@ runCode l = do
   let tokenizedInput  = map lexer l
   print $ runCodeKernel [] tokenizedInput
 
-runCodeKernel :: Env -> [[Token]] -> Exp
+runCodeKernel :: Env -> [[Token]] -> (Exp, Env, Buffer)
 runCodeKernel e [x] = do
   let monad = parse x
   case monad of
-    (Ok m) -> fst $ step e m
-    (Failed s) -> EErr s
+    (Ok m) -> step True [] e m
+    (Failed s) -> (EErr s, [], [])
 runCodeKernel e (x:xs) = do
   let monad = parse x
   case monad of 
-    (Ok m) -> (\(_, env) -> runCodeKernel env xs) $ step e m 
-    (Failed s) -> EErr s
+    (Ok m) -> (\(_, env, _) -> runCodeKernel env xs) $ step True [] e m 
+    (Failed s) -> (EErr s, [], [])
  
