@@ -273,7 +273,7 @@ thd :: (a, b, c) -> c
 thd (x, y, z) = z
 
   
-evaluate :: Bool -> Env -> Exp -> (Exp, Env, Buffer)
-evaluate d env exp
-  | not $ value exp = (\(ex, en, pb) -> evaluate d en ex) (step d [] env exp)
-  | otherwise     =  (exp, env, [])
+evaluate :: Bool -> Env -> Exp -> Buffer  -> (Exp, Env, Buffer)
+evaluate d env exp pb
+  | not $ value exp = (\(ex, en, pb) -> evaluate d en ex pb) (step d pb env exp)
+  | otherwise     =  (exp, env, pb)

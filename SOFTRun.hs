@@ -14,15 +14,31 @@ until_ env pred prompt = do
     result <- prompt
     if pred result
         then return ()
-        else do 
+    else if (take 7 result == "explain")  then do
+        let input =  (\('e':'x':'p':'l':'a':'i':'n':xs) -> xs) result
+        let monad = parse.lexer $ input
+        case monad of
+          (Ok m) -> do
+            let (ex,en,pb) = evaluate True env m []
+            printAll (reverse pb)
+            putStrLn $ show ex
+            until_ en pred prompt
+          (Failed s) -> putStr s
+    else do 
           let monad = parse .lexer $ result
           case monad of 
             (Ok m) -> do
-              let (ex, en, pb) = evaluate True env m 
+              let (ex, en, pb) = evaluate False env m [] 
               putStrLn $ show en
               putStrLn $ show ex
               until_ en pred prompt
             (Failed s) -> putStr s
+
+printAll :: [String] -> IO ()
+printAll [] =  putStrLn ""
+printAll (x:xs) = do
+  putStrLn $ show x
+  printAll xs
 
 main :: IO ()
 main = do args <- getArgs
@@ -59,6 +75,6 @@ runCodeKernel e [x] = do
 runCodeKernel e (x:xs) = do
   let monad = parse x
   case monad of 
-    (Ok m) -> (\(_, env, _) -> runCodeKernel env xs) $ step True [] e m 
+    (Ok m) -> (\(_, env, _) -> runCodeKernel env xs) $ step False [] e m 
     (Failed s) -> (EErr s, [], [])
  
