@@ -14,6 +14,9 @@ until_ env pred prompt = do
     result <- prompt
     if pred result
         then return ()
+    else if (take 11 result == "environment") then do
+        putStrLn $ show env
+        until_ env pred prompt
     else if (take 7 result == "explain")  then do
         let input =  (\('e':'x':'p':'l':'a':'i':'n':xs) -> xs) result
         let monad = parse.lexer $ input
@@ -29,7 +32,6 @@ until_ env pred prompt = do
           case monad of 
             (Ok m) -> do
               let (ex, en, pb) = evaluate False env m [] 
-              putStrLn $ show en
               putStrLn $ show ex
               until_ en pred prompt
             (Failed s) -> putStr s
