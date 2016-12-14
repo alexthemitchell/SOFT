@@ -87,18 +87,18 @@ instance Show Exp where
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) =
      case op of
-      BAdd -> (show e1) ++ " + "   ++ (show e2)
-      BSub -> (show e1) ++ " - "   ++ (show e2)
-      BMul -> (show e1) ++ " * "   ++ (show e2)
-      BDiv -> (show e1) ++ " / "   ++ (show e2)
-      BMod -> (show e1) ++ " mod " ++ (show e2)
-      BEql -> (show e1) ++ " == "  ++ (show e2)
-      BLtn -> (show e1) ++ " < "   ++ (show e2)
-      BGtn -> (show e1) ++ " > "   ++ (show e2)
-      BLeq -> (show e1) ++ " <= "  ++ (show e2)
-      BGeq -> (show e1) ++ " >= "  ++ (show e2)
-      BAnd -> (show e1) ++ " and " ++ (show e2)
-      BOr  -> (show e1) ++ " or "  ++ (show e2)
+      BAdd -> "(" ++ (show e1) ++ " + "   ++ (show e2) ++ ")"
+      BSub -> "(" ++ (show e1) ++ " - "   ++ (show e2) ++ ")"
+      BMul -> "(" ++ (show e1) ++ " * "   ++ (show e2) ++ ")"
+      BDiv -> "(" ++ (show e1) ++ " / "   ++ (show e2) ++ ")"
+      BMod -> "(" ++ (show e1) ++ " mod " ++ (show e2) ++ ")"
+      BEql -> "(" ++ (show e1) ++ " == "  ++ (show e2) ++ ")"
+      BLtn -> "(" ++ (show e1) ++ " < "   ++ (show e2) ++ ")"
+      BGtn -> "(" ++ (show e1) ++ " > "   ++ (show e2) ++ ")"
+      BLeq -> "(" ++ (show e1) ++ " <= "  ++ (show e2) ++ ")"
+      BGeq -> "(" ++ (show e1) ++ " >= "  ++ (show e2) ++ ")"
+      BAnd -> "(" ++ (show e1) ++ " and " ++ (show e2) ++ ")"
+      BOr  -> "(" ++ (show e1) ++ " or "  ++ (show e2) ++ ")"
     show (ENot e)     = "not " ++ (show e)
     show (EFst l)     = "first " ++ (show l)
     show ENil         = ""
@@ -226,7 +226,7 @@ step d pb e (EApp s lv) =
    (EFunc f lp e1) -> do
      let (ex, b) = eApply d [] lp lv e1 e
      (ex, e, if d then b++(show (EApp s lv)):pb else pb)
-   _               -> (EErr $  "function" ++ s  ++ "is not declared", e, pb)
+   _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
 --call for variable declaration
 step d pb e (ELet s v)
   | existsIn s e   = (ENil, findAndReplace s v e, if d then (s ++ "declared as" ++ (show v)):pb else pb)
