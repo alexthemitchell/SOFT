@@ -14,11 +14,11 @@ until_ env pred prompt = do
     result <- prompt
     if pred result
         then return ()
-    else if (take 11 result == "environment") then do
+    else if result == ":env" then do
         putStrLn $ show env
         until_ env pred prompt
-    else if (take 7 result == "explain")  then do
-        let input =  (\('e':'x':'p':'l':'a':'i':'n':xs) -> xs) result
+    else if (take 8 result == ":explain")  then do
+        let input =  (\(':':'e':'x':'p':'l':'a':'i':'n':xs) -> xs) result
         let monad = parse.lexer $ input
         case monad of
           (Ok m) -> do
@@ -61,7 +61,7 @@ evalAndPrint :: String -> IO ()
 evalAndPrint input = print . parse . lexer $ input
 
 runRepl :: IO ()
-runRepl = until_ [] (== "quit") (readPrompt ">> ")
+runRepl = until_ [] (== ":quit") (readPrompt ">> ")
 
 runCode :: [String] -> IO ()
 runCode l = do 

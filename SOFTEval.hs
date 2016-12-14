@@ -64,7 +64,6 @@ data Exp where
   EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations
   EApp  :: String -> [Exp] -> Exp --Applies given function to expressio
-  EExpl :: Exp -> Exp
   EIf   :: Exp -> Exp -> Exp -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
 
@@ -108,7 +107,6 @@ instance Show Exp where
     show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
     show (EApp x e) = x ++ "( " ++ (show e) ++ ")"
-    show (EExpl e)  = (show e)
 
 value :: Exp -> Bool
 value (EInt _)        = True

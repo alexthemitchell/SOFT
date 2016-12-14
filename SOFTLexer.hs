@@ -110,6 +110,5 @@ lexVar cs =
       ("first", rest) -> TokenFst  : lexer rest
       ("empty", rest) -> TokenEmp  : lexer rest
       ("rest" , rest) -> TokenRst  : lexer rest
-      ("explain", rest) -> TokenExp : lexer rest
       ("function", rest) -> TokenFunction : lexer rest
       (var,rest)      -> TokenVar var : lexer rest
