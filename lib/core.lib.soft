@@ -1,0 +1,31 @@
+function And (list) {
+  if (empty list) then true
+  else (first list) and And(rest list)
+}
+
+function Sum(list) {
+  if (empty list) then 0
+  else (first list) + Sum(rest list)
+}
+
+function Product(list) {
+  if (empty list) then 1
+  else (first list) * Sum (rest list)
+}
+
+function Maximum(list) {
+  if (rest list == []) then (first list)
+  else if (first list > Maximum(rest list)) then (first list)
+  else Maximum(rest list)
+}
+
+function Remove(value,list) {
+  if (empty list) then []
+  else if (first list == value) then (rest list)
+  else value:Remove(value,list)
+}
+
+function Sort(list) {
+  if (empty list) then []
+  else Maximum(list):Sort(Remove(Maximum(list),list))
+}
