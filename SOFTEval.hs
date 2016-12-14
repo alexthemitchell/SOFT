@@ -229,8 +229,8 @@ step d pb e (EApp s lv) =
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
 --call for variable declaration
 step d pb e (ELet s v)
-  | existsIn s e   = (ENil, findAndReplace s v e, if d then (s ++ "declared as" ++ (show v)):pb else pb)
-  | value v        = (ENil, (s,v):e, if d then (s ++ "declared as" ++ (show v)):pb else pb)
+  | existsIn s e   = (v, findAndReplace s v e, if d then (s ++ " declared as " ++ (show v)):pb else pb)
+  | value v        = (v, (s,v):e, if d then (s ++ " declared as " ++ (show v)):pb else pb)
   | otherwise      =
      case v of
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e, pb)
