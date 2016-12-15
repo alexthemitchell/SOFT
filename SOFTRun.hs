@@ -1,4 +1,4 @@
-import Prelude hiding(fst, snd)
+import Prelude
 import SOFTGrammar
 import SOFTLexer
 import SOFTEval
@@ -6,7 +6,7 @@ import System.IO
 import System.Environment
 
 --{
---REPL code taken from:
+--REPL code adapted from:
 --https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours/Building_a_REPL
 --}
 until_ :: Env -> (String -> Bool) -> IO String -> IO ()
@@ -27,11 +27,11 @@ until_ env pred prompt = do
             putStrLn $ show ex
             until_ en pred prompt
           (Failed s) -> putStr s
-    else do 
+    else do
           let monad = parse .lexer $ result
-          case monad of 
+          case monad of
             (Ok m) -> do
-              let (ex, en, pb) = evaluate False env m [] 
+              let (ex, en, pb) = evaluate False env m []
               putStrLn $ show ex
               until_ en pred prompt
             (Failed s) -> putStr s
@@ -42,14 +42,73 @@ printAll (x:xs) = do
   putStrLn $ show x
   printAll xs
 
+{--
+linesHelper :: String -> [String] -> [String]
+linesHelper "" sofar = sofar
+linesHelper s sofar
+  |  take 8 s ==  "function" = do
+      let (rest,str) = span  (/= '}') s
+      linesHelper rest [str] ++ sofar
+  |  head s == '(' = do
+      let (rest,str) = span  (/= ')') s
+      linesHelper rest [str] ++ sofar
+  |  head s == '[' = do
+      let (rest,str) = span  (/= ']') s
+      linesHelper rest [str] ++ sofar
+  |  head s == '"'= do
+      let (rest,str) = span  (/= '"') s
+      linesHelper rest [str] ++ sofar
+  | otherwise = linesHelper (tail s) ((head s : head sofar) ++ tail sofar)
+  | otherwise = linesHelper (tail s) [((head s) : head sofar)] ++  tail sofar
+
+lines' :: String -> [String]
+lines' s = linesHelper s []
+--}
+
+
+
+
+
+
+
+
+stringUntil :: (a -> Bool) -> [a] -> [a]
+stringUntil _ []     = []
+stringUntil f (x:xs) = if f x then x:stringUntil f [] else x:stringUntil f xs
+
+
+
+
+
+splitProgram :: String -> [String] -> [String]
+splitProgram [] sofar = sofar
+splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
+    splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
+    where (functionName,rest) = span (/='{') xs
+          (functionBody,extra)= matchDelim rest '{' '}' "" ("","")
+splitProgram ('\n':xs) sofar = splitProgram xs sofar
+splitProgram s sofar = do
+    let (line,rest) = span (/= '\n') s
+    splitProgram rest (sofar ++ [line])
+
+
+--Precondition: the first character of the program must be the deliminator
+matchDelim  :: String -> Char -> Char -> String -> (String,String) -> (String,String)
+matchDelim (x:xs) o c "" (before, _ ) = if before == [] then matchDelim xs o c (o:"") (x:"","") else (before, xs)
+matchDelim [] _ _ _ _      = ("you","mismatched")
+matchDelim (x:xs) open close stck (before,_)
+  | x == open  = matchDelim xs open close (open:stck) (before++[x],"")
+  | x == close = matchDelim xs open close (tail stck) (before++[x],"")
+  | otherwise  = matchDelim xs open close stck (before++[x], "")
+
 main :: IO ()
 main = do args <- getArgs
           case length args of
             1 -> do
               code <- readFile $ args !! 0
-              let loc = lines code
+              let loc = splitProgram code [[]]
               runCode loc
-            otherwise -> runRepl 
+            otherwise -> runRepl
 
 flushStr :: String -> IO ()
 flushStr str = putStr str >> hFlush stdout
@@ -63,20 +122,21 @@ evalAndPrint input = print . parse . lexer $ input
 runRepl :: IO ()
 runRepl = until_ [] (== ":quit") (readPrompt ">> ")
 
-runCode :: [String] -> IO ()
-runCode l = do 
-  let tokenizedInput  = map lexer l
-  print $ runCodeKernel [] tokenizedInput
 
-runCodeKernel :: Env -> [[Token]] -> (Exp, Env, Buffer)
+runCode :: [String] -> IO ()
+runCode l = do
+    let tokenizedInput  = map lexer (filter (/= "") l) --filter is a hack, empty string causes parse errors. 
+    print $ runCodeKernel [] tokenizedInput
+
+runCodeKernel :: Env -> [[Token]] -> Exp
 runCodeKernel e [x] = do
   let monad = parse x
   case monad of
-    (Ok m) -> step True [] e m
-    (Failed s) -> (EErr s, [], [])
+    (Ok m) -> fst' $ step True [] e m
+    (Failed s) -> EErr s
 runCodeKernel e (x:xs) = do
   let monad = parse x
-  case monad of 
-    (Ok m) -> (\(_, env, _) -> runCodeKernel env xs) $ step False [] e m 
-    (Failed s) -> (EErr s, [], [])
- 
+  case monad of
+    (Ok m) -> (\(_, env, _) -> runCodeKernel env xs) $ step False [] e m
+    (Failed s) -> EErr s
+

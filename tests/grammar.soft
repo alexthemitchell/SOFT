@@ -64,7 +64,9 @@ area
 5 == 5
 
 # FUNCTIONS
-function addBiz (num) { num + 5 } 
+function addBiz (num) {
+  num + 5
+}
 addBiz (10)
 function multiply (num1, num2) { num1 * num2 }
 multiply (7,9)
@@ -105,7 +107,7 @@ let b4 = (y == 5)
 #    Positive
 #}
 
-### explain 
+### explain
 #explain (mult([1,2,3,4]))
 
 

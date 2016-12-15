@@ -1,7 +1,7 @@
 {-# Language GADTs #-}
 module SOFTEval where
 import SOFTLexer
-import Prelude hiding (fst, snd)
+import Prelude
 --import Data.Global
 import Data.IORef
 
@@ -131,8 +131,8 @@ step d pb e (ELst  l) = (ELst l, e, if d then (show l):pb else pb)
 step d pb v (EErr  e) = (EErr e, v, if d then (show e):pb else pb)
 step d pb e (EVar  s) = (find s e, e, if d then s:pb else pb) --returns value associated with variable
 step d pb e (EBinop e1 op e2)
-  | not $ value e1 = (EBinop (fst $ step d pb e e1) op e2, e, if d then (show (EBinop e1 op e2)):pb else pb )
-  | not $ value e2 = (EBinop e1 op (fst $ step d pb e e2), e, if d then (show (EBinop e1 op e2)):pb else pb )
+  | not $ value e1 = (EBinop (fst' $ step d pb e e1) op e2, e, if d then (show (EBinop e1 op e2)):pb else pb )
+  | not $ value e2 = (EBinop e1 op (fst' $ step d pb e e2), e, if d then (show (EBinop e1 op e2)):pb else pb )
   | otherwise      =
      case (e1, op ,e2) of
        (EInt n1, BAdd, EInt n2) -> (EInt $ n1 + n2, e, (if d then ((show n1) ++ "+" ++ (show n2)):pb else pb))
@@ -177,35 +177,35 @@ step d pb e (EBinop e1 op e2)
        ( _      , BOr , _      ) -> (EErr  $ "or takes bool, bool",e,pb)
 
 step d pb e (ENot b)
-  |not $ value b = (ENot (fst $ step d pb e b),e, if d then (show (ENot b):pb) else pb)
+  |not $ value b = (ENot (fst' $ step d pb e b),e, if d then (show (ENot b):pb) else pb)
   |otherwise     =
      case b of
        (EBool b1) -> (EBool $ not b1,e, if d then (show (ENot b)):pb else pb)
        _          -> (EErr $ "not takes bool", e, pb)
 step d pb e (EFst l)
-  | not $ value l = (EFst (fst $ step d pb e l), e, if d then (show l):pb else pb)
+  | not $ value l = (EFst (fst' $ step d pb e l), e, if d then (show l):pb else pb)
   | otherwise     =
      case l of
       (ELst (x:_)) -> step d pb e x
       ENil         -> (ENil, e, if d then (show ENil):pb else pb)
       _            -> (EErr $ "first takes a list", e, pb)
 step d pb e (ERst l)
-  | not $ value l = (ERst (fst $ step d pb e l), e, if d then (show l):pb else pb)
+  | not $ value l = (ERst (fst' $ step d pb e l), e, if d then (show l):pb else pb)
   | otherwise     =
      case l of
       (ELst (_:xs)) -> (ELst $ xs, e, if d then (show xs):pb else pb)
       ENil          -> (ENil, e, if d then (show ENil):pb else pb)
       _             -> (EErr $ "rest takes a list", e, pb)
 step d pb e (EEmt l)
-  |not $ value l = (EEmt (fst $ step d pb e l), e, if d then (show l):pb else pb)
+  |not $ value l = (EEmt (fst' $ step d pb e l), e, if d then (show l):pb else pb)
   |otherwise     =
     case l of
      ELst [] -> (EBool True, e, if d then (show l):pb else pb)
      ENil -> (EBool True, e, if d then (show ENil):pb else pb)
      _    -> (EBool False, e, pb)
 step d pb e (ECons v l)
-  |not $ value v = (ECons (fst $ step d pb e v) l, e, if d then (show (ECons v l)):pb else pb)
-  |not $ value l = (ECons v (fst $ step d pb e l), e, if d then (show (ECons v l)):pb else pb)
+  |not $ value v = (ECons (fst' $ step d pb e v) l, e, if d then (show (ECons v l)):pb else pb)
+  |not $ value l = (ECons v (fst' $ step d pb e l), e, if d then (show (ECons v l)):pb else pb)
   |otherwise     =
     case l of
       (ELst l) -> (ELst $ v:l, e, if d then (show l):pb else pb)
@@ -213,7 +213,7 @@ step d pb e (ECons v l)
       _        -> (EErr "cons takes a value and a list", e, pb)
 step d pb e ENil = (ELst $ [],e, if d then (show ENil):pb else pb )
 step d pb e (EIf b e1 e2)
-  | not $ value b = step d pb e (EIf (fst $ step d pb e b) e1 e2)
+  | not $ value b = step d pb e (EIf (fst' $ step d pb e b) e1 e2)
   | otherwise     = 
      case b of 
       EBool b1 -> if b1 then step d pb e e1 else step d pb e e2
@@ -233,7 +233,7 @@ step d pb e (ELet s v)
      case v of
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e, pb)
       (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e, pb)
-      _               -> (ELet s (fst $ step d pb e v) , e, pb)
+      _               -> (ELet s (fst' $ step d pb e v) , e, pb)
 --call for function declaration
 step d pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
@@ -267,11 +267,11 @@ findAndReplace s v ((s1, v1):xs)
   | s == s1   = (s1, v):xs
   | otherwise = findAndReplace s v xs
 
-fst :: (a, b, c) -> a
-fst (x, y, z) = x
+fst' :: (a, b, c) -> a
+fst' (x, y, z) = x
 
-snd :: (a, b, c) -> b
-snd (x, y, z) = y
+snd' :: (a, b, c) -> b
+snd' (x, y, z) = y
 
 thd :: (a, b, c) -> c
 thd (x, y, z) = z

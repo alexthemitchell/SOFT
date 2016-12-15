@@ -43,7 +43,6 @@ data Token
       | TokenLSqBrkt
       | TokenRSqBrkt
       | TokenComma
-      | TokenNewline
  deriving Show
 
 isNumSymbol :: Char -> Bool
@@ -52,7 +51,7 @@ isNumSymbol c = isDigit c || c == '.'
 -- Lexer --
 lexer :: String -> [Token]
 lexer []               = []
-lexer ('\n':cs)        = [TokenNewline]
+lexer ('\n':cs)        = lexer cs
 lexer ('#':cs)         = lexComment cs
 lexer ('"':cs)         = lexStr cs
 lexer (c:cs)
