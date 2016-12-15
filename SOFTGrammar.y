@@ -53,55 +53,36 @@ import SOFTEval
   ','       { TokenComma }
   str       { TokenStr $$ }
 
-%nonassoc '>' '<' '<=' '>='
+%nonassoc '>' '<' '<=' '>=' '==' 'and' 'or' 'mod'
 %left '+' '-'
 %left '*' '/'
 %%
 
-Cmd     : Exp         { $1 }
-        | {- Empty -} { ENil }
-
 Exp     : let var '=' Closure                         { ELet $2 $4 }
-        | function var '(' Parameters ')' '{' Exp '}' { EFunc $2 (reverse $4) $7} 
+        | function var '(' Parameters ')' '{' Closure '}' { EFunc $2 (reverse $4) $7} 
         | Closure                                     { $1 }
-        | if '(' Exp ')' '{' Exp '}' else '{' Exp '}' { EIf $3 $6 $10 }
-        | first Exp                                   { EFst $2 }
-        | rest Exp                                    { ERst $2 }
-        | empty Exp                                   { EEmt $2 }
         
-Closure : '(' Exp ')'       { $2 }
-        | List              { $1 } 
-        | BOpNum            { $1 }
+Closure : '(' Closure ')'       { $2 }
+        | List                  { $1 } 
+        | if '(' Bool ')' '{' Exp '}' else '{' Exp '}' { EIf $3 $6 $10 }
+        | Value                 {$1 }
 
 List : '[' ListLiteral ']' { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
-     | Closure ':' Closure    { ECons $1 $3 }
+     | Closure ':' List    { ECons $1 $3 }
 
-ListLiteral : ListLiteral ',' Exp    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
-            | Exp                    { [$1] }
+ListLiteral : ListLiteral ',' Closure    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
+            | Closure                    { [$1] }
             | {- Empty -}            { [] }
 
 Parameters : Parameters ',' var  { $3 : $1 }
            | var                 { [$1] }
            | {- empty -}         { [] }
 
-BOpNum  : Exp '+' Exp      { EBinop $1 BAdd $3 }
-        | Exp '-' Exp      { EBinop $1 BSub $3 }
-        | Exp '*' Exp      { EBinop $1 BMul $3 }
-        | Exp '/' Exp      { EBinop $1 BDiv $3 }
-        | Exp 'mod' Exp    { EBinop $1 BMod $3 }
-        | Exp '==' Exp     { EBinop $1 BEql $3 }
-        | Exp '<' Exp      { EBinop $1 BLtn $3 }
-        | Exp '>' Exp      { EBinop $1 BGtn $3 }
-        | Exp '>=' Exp     { EBinop $1 BGeq $3 }
-        | Exp '<=' Exp      { EBinop $1 BLeq $3 }
-        | Value              { $1 }
-        | BOpBool            { $1 }
-
-BOpBool : Exp 'and' Exp     { EBinop $1 BAnd $3 }
-        | Exp 'or' Exp      { EBinop $1 BOr $3 }
-        |'not' Exp          { ENot $2 }
-        | Value               { $1 }
-
+BOpNum  : Closure '+' Closure      { EBinop $1 BAdd $3 }
+        | Closure '-' Closure      { EBinop $1 BSub $3 }
+        | Closure '*' Closure      { EBinop $1 BMul $3 }
+        | Closure '/' Closure      { EBinop $1 BDiv $3 }
+        | Closure 'mod' int    { EBinop $1 BMod $ EInt $3 }
 
 Value   : '-' int           { EInt $ negate $2 }
         | '-' float         { EFlt $ negate $2 }
@@ -113,6 +94,18 @@ Value   : '-' int           { EInt $ negate $2 }
         | Bool              { $1 }
         | str               { EStr $1 }
         | nil               { ENil }
+        | first List        { EFst $2 }
+        | rest List         { ERst $2 }
+        | BOpNum            { $1 }
 
 Bool    : true              { EBool True }
         | false             { EBool False }
+        | 'not' Bool          { ENot $2 }
+        | Bool 'and' Bool   { EBinop $1 BAnd $3 }
+        | Bool 'or' Bool    { EBinop $1 BOr $3 }
+        | Closure '==' Closure  { EBinop $1 BEql $3 }
+        | Closure '<' Closure      { EBinop $1 BLtn $3 }
+        | Closure '>' Closure { EBinop $1 BGtn $3 }
+        | Closure '>=' Closure { EBinop $1 BGeq $3 }
+        | Closure '<=' Closure { EBinop $1 BLeq $3 }
+        | empty List        { EEmt $2 }
