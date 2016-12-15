@@ -50,6 +50,9 @@ splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
     splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
     where (functionName,rest) = span (/='{') xs
           (functionBody,extra)= matchDelim rest '{' '}' 0 ("","")
+splitProgram('(':xs) sofar = do
+    let (line,rest) = matchDelim ('(':xs) '(' ')' 0 ("","")
+    splitProgram rest (sofar ++ [line])
 splitProgram ('\n':xs) sofar = splitProgram xs sofar
 splitProgram s sofar = do
     let (line,rest) = span (/= '\n') s
