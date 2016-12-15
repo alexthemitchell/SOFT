@@ -52,7 +52,6 @@ isNumSymbol c = isDigit c || c == '.'
 lexer :: String -> [Token]
 lexer []               = []
 lexer ('\n':cs)        = lexer cs
-lexer ('#':cs)         = lexComment cs
 lexer ('"':cs)         = lexStr cs
 lexer (c:cs)
       | isSpace c      = lexer cs
@@ -77,11 +76,6 @@ lexer ('<':cs)         = TokenLT : lexer cs
 lexer ('>':cs)         = TokenGT : lexer cs
 lexer ('=':cs)         = TokenEqual : lexer cs
 lexer (',':cs)         = TokenComma : lexer cs
-
-lexComment :: String -> [Token]
-lexComment [] = []
-lexComment ('\n':cs) = lexer cs
-lexComment (c:cs) = lexComment cs
 
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
   where (str, rest) = span (\x -> x /= '"') cs

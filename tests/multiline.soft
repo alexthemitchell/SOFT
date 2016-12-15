@@ -1,4 +1,6 @@
-function addBiz (num){
+#lkajsdf
+
+function addBiz (num){ #in function
 num + 5}
 addBiz(4)
 ((1 + 2) *(

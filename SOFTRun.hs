@@ -42,7 +42,11 @@ printAll (x:xs) = do
   putStrLn $ show x
   printAll xs
 
-
+stripComments :: String -> String
+stripComments []       = []
+stripComments ('#':xs) = stripComments rest
+  where (line,rest) = span (/= '\n') xs
+stripComments (x:xs)   = x:stripComments xs
 
 splitProgram :: String -> [String] -> [String]
 splitProgram [] sofar = sofar
@@ -74,7 +78,8 @@ main = do args <- getArgs
           case length args of
             1 -> do
               code <- readFile $ args !! 0
-              let loc = splitProgram code [[]]
+              let noCom = stripComments code
+              let loc = splitProgram noCom [[]]
               runCode loc
             otherwise -> runRepl
 
@@ -85,7 +90,7 @@ readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
 evalAndPrint :: String -> IO ()
-evalAndPrint input = print . parse . lexer $ input
+evalAndPrint input = print . parse . lexer $ stripComments $ input
 
 runRepl :: IO ()
 runRepl = until_ [] (== ":quit") (readPrompt ">> ")
@@ -93,7 +98,7 @@ runRepl = until_ [] (== ":quit") (readPrompt ">> ")
 
 runCode :: [String] -> IO ()
 runCode l = do
-    let tokenizedInput  = map lexer l 
+    let tokenizedInput  = map lexer l
     print $ runCodeKernel [] tokenizedInput
 
 runCodeKernel :: Env -> [[Token]] -> Exp
