@@ -46,6 +46,7 @@ printAll (x:xs) = do
 
 splitProgram :: String -> [String] -> [String]
 splitProgram [] sofar = sofar
+splitProgram program ("":xs) = splitProgram program xs
 splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
     splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
     where (functionName,rest) = span (/='{') xs
@@ -92,7 +93,7 @@ runRepl = until_ [] (== ":quit") (readPrompt ">> ")
 
 runCode :: [String] -> IO ()
 runCode l = do
-    let tokenizedInput  = map lexer (filter (/= "") l) --filter is a hack, empty string causes parse errors. 
+    let tokenizedInput  = map lexer l 
     print $ runCodeKernel [] tokenizedInput
 
 runCodeKernel :: Env -> [[Token]] -> Exp
