@@ -42,42 +42,6 @@ printAll (x:xs) = do
   putStrLn $ show x
   printAll xs
 
-{--
-linesHelper :: String -> [String] -> [String]
-linesHelper "" sofar = sofar
-linesHelper s sofar
-  |  take 8 s ==  "function" = do
-      let (rest,str) = span  (/= '}') s
-      linesHelper rest [str] ++ sofar
-  |  head s == '(' = do
-      let (rest,str) = span  (/= ')') s
-      linesHelper rest [str] ++ sofar
-  |  head s == '[' = do
-      let (rest,str) = span  (/= ']') s
-      linesHelper rest [str] ++ sofar
-  |  head s == '"'= do
-      let (rest,str) = span  (/= '"') s
-      linesHelper rest [str] ++ sofar
-  | otherwise = linesHelper (tail s) ((head s : head sofar) ++ tail sofar)
-  | otherwise = linesHelper (tail s) [((head s) : head sofar)] ++  tail sofar
-
-lines' :: String -> [String]
-lines' s = linesHelper s []
---}
-
-
-
-
-
-
-
-
-stringUntil :: (a -> Bool) -> [a] -> [a]
-stringUntil _ []     = []
-stringUntil f (x:xs) = if f x then x:stringUntil f [] else x:stringUntil f xs
-
-
-
 
 
 splitProgram :: String -> [String] -> [String]
@@ -85,7 +49,7 @@ splitProgram [] sofar = sofar
 splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
     splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
     where (functionName,rest) = span (/='{') xs
-          (functionBody,extra)= matchDelim rest '{' '}' "" ("","")
+          (functionBody,extra)= matchDelim rest '{' '}' 0 ("","")
 splitProgram ('\n':xs) sofar = splitProgram xs sofar
 splitProgram s sofar = do
     let (line,rest) = span (/= '\n') s
@@ -93,12 +57,12 @@ splitProgram s sofar = do
 
 
 --Precondition: the first character of the program must be the deliminator
-matchDelim  :: String -> Char -> Char -> String -> (String,String) -> (String,String)
-matchDelim (x:xs) o c "" (before, _ ) = if before == [] then matchDelim xs o c (o:"") (x:"","") else (before, xs)
+matchDelim  :: String -> Char -> Char -> Int -> (String,String) -> (String,String)
+matchDelim (x:xs) o c 0 (before, _ ) = if before == [] then matchDelim xs o c 1 (x:"","") else (before, xs)
 matchDelim [] _ _ _ _      = ("you","mismatched")
 matchDelim (x:xs) open close stck (before,_)
-  | x == open  = matchDelim xs open close (open:stck) (before++[x],"")
-  | x == close = matchDelim xs open close (tail stck) (before++[x],"")
+  | x == open  = matchDelim xs open close (stck+1) (before++[x],"")
+  | x == close = matchDelim xs open close (stck-1) (before++[x],"")
   | otherwise  = matchDelim xs open close stck (before++[x], "")
 
 main :: IO ()
