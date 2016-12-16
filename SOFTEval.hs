@@ -64,6 +64,7 @@ data Exp where
   EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations
   EApp  :: String -> [Exp] -> Exp --Applies given function to expressio
+  EPrint:: Exp -> Exp
   EIf   :: Exp -> Exp -> Exp -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
 
@@ -234,11 +235,13 @@ step d pb e (ELet s v)
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e, pb)
       (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e, pb)
       _               -> (ELet s (fst' $ step d pb e v) , e, pb)
+
+step d pb e (EPrint exp) = (exp, e, (show exp):pb)
 --call for function declaration
 step d pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
-  | existsIn s e = (ENil, findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb) 
-  | otherwise = (ENil, (s, (EFunc s l e1)):e, pb)
+  | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb) 
+  | otherwise = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), (s, (EFunc s l e1)):e, pb)
 
 eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
 eApply d pb s v exp env 

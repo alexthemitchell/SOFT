@@ -26,7 +26,9 @@ until_ env pred prompt = do
             printAll (reverse pb)
             putStrLn $ show ex
             until_ en pred prompt
-          (Failed s) -> putStr s
+          (Failed s) -> do
+            putStrLn s
+            until_ env pred prompt
     else do
           let monad = parse .lexer $ result
           case monad of
@@ -34,7 +36,9 @@ until_ env pred prompt = do
               let (ex, en, pb) = evaluate False env m []
               putStrLn $ show ex
               until_ en pred prompt
-            (Failed s) -> putStr s
+            (Failed s) -> do
+              putStrLn s
+              until_ env pred prompt
 
 printAll :: [String] -> IO ()
 printAll [] =  putStrLn ""
@@ -99,17 +103,22 @@ runRepl = until_ [] (== ":quit") (readPrompt ">> ")
 runCode :: [String] -> IO ()
 runCode l = do
     let tokenizedInput  = map lexer l
-    print $ runCodeKernel [] tokenizedInput
+    runCodeKernel [] tokenizedInput []
 
-runCodeKernel :: Env -> [[Token]] -> Exp
-runCodeKernel e [x] = do
+runCodeKernel :: Env -> [[Token]] -> Buffer  -> IO()
+runCodeKernel e [x] pb = do 
   let monad = parse x
   case monad of
-    (Ok m) -> fst' $ step True [] e m
-    (Failed s) -> EErr s
-runCodeKernel e (x:xs) = do
+    (Ok m) -> do
+      let (exp, env, pb) = step False [] e m
+      printAll pb
+    (Failed s) -> putStrLn $ show $ EErr s
+runCodeKernel e (x:xs) pb = do
   let monad = parse x
   case monad of
-    (Ok m) -> (\(_, env, _) -> runCodeKernel env xs) $ step False [] e m
-    (Failed s) -> EErr s
+    (Ok m) -> (\(_, env, pb) -> do 
+      printAll pb
+      runCodeKernel env xs []
+      ) $ step False [] e m
+    (Failed s) -> putStrLn $ show $  EErr s
 

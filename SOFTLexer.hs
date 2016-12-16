@@ -43,6 +43,7 @@ data Token
       | TokenLSqBrkt
       | TokenRSqBrkt
       | TokenComma
+      | TokenPrint
  deriving Show
 
 isNumSymbol :: Char -> Bool
@@ -104,4 +105,5 @@ lexVar cs =
       ("empty", rest) -> TokenEmp  : lexer rest
       ("rest" , rest) -> TokenRst  : lexer rest
       ("function", rest) -> TokenFunction : lexer rest
+      ("print", rest) -> TokenPrint : lexer rest
       (var,rest)      -> TokenVar var : lexer rest

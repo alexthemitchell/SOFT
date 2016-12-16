@@ -52,6 +52,7 @@ import SOFTEval
   char      { TokenChar $$ }
   ','       { TokenComma }
   str       { TokenStr $$ }
+  print     { TokenPrint }
 
 %nonassoc '>' '<' '<=' '>=' '==' 'and' 'or' 'mod'
 %left '+' '-'
@@ -61,11 +62,13 @@ import SOFTEval
 Exp     : let var '=' Closure                         { ELet $2 $4 }
         | function var '(' Parameters ')' '{' Closure '}' { EFunc $2 (reverse $4) $7} 
         | Closure                                     { $1 }
+        | print Closure                                   {EPrint $2}
         
 Closure : '(' Closure ')'       { $2 }
         | List                  { $1 } 
         | if '(' Bool ')' '{' Exp '}' else '{' Exp '}' { EIf $3 $6 $10 }
         | Value                 {$1 }
+        | {- Empty -}           {ENil}
 
 List : '[' ListLiteral ']' { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
      | Closure ':' List    { ECons $1 $3 }
