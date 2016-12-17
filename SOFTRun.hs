@@ -107,17 +107,17 @@ runCode l = do
     runCodeKernel [] tokenizedInput []
 
 runCodeKernel :: Env -> [[Token]] -> Buffer  -> IO()
-runCodeKernel e [x] pb = do 
+runCodeKernel e [x] pb = do
   let monad = parse x
   case monad of
     (Ok m) -> do
-      let (exp, env, pb) = step False [] e m
+      let (exp, env, pb) = evaluate False e m []--step False [] e m
       printAll pb
     (Failed s) -> putStrLn $ show $ EErr s
 runCodeKernel e (x:xs) pb = do
   let monad = parse x
   case monad of
-    (Ok m) -> (\(_, env, pb) -> do 
+    (Ok m) -> (\(_, env, pb) -> do
       printAll pb
       runCodeKernel env xs []
       ) $ step False [] e m
