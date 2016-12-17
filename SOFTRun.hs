@@ -11,7 +11,8 @@ import System.Environment
 --}
 until_ :: Env -> (String -> Bool) -> IO String -> IO ()
 until_ env pred prompt = do
-    result <- prompt
+    r <- prompt
+    let result = stripComments r
     if pred result
         then return ()
     else if result == ":env" then do
@@ -94,7 +95,7 @@ readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
 evalAndPrint :: String -> IO ()
-evalAndPrint input = print . parse . lexer $ stripComments $ input
+evalAndPrint input = print . parse . lexer $ input
 
 runRepl :: IO ()
 runRepl = until_ [] (== ":quit") (readPrompt ">> ")
