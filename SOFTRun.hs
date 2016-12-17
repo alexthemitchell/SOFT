@@ -111,7 +111,7 @@ runCodeKernel e [x] pb = do
   let monad = parse x
   case monad of
     (Ok m) -> do
-      let (exp, env, pb) = evaluate False e m []--step False [] e m
+      let (exp, env, pb) = evaluate True e m []--step False [] e m
       printAll pb
     (Failed s) -> putStrLn $ show $ EErr s
 runCodeKernel e (x:xs) pb = do
