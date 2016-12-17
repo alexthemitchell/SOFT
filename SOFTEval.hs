@@ -262,7 +262,7 @@ existsIn s ((s1, _):xs)
   | otherwise = existsIn s xs
 
 find :: String -> Env -> Exp
-find _ []       = EErr "Variable has not been declared"
+find s []       = EErr $ "`" ++  s  ++ "` has not been declared"
 find s ((s1, v1):xs)
   | s == s1   = v1
   | otherwise = find s xs
