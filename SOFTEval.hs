@@ -236,7 +236,9 @@ step d pb e (ELet s v)
       (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e, pb)
       _               -> (ELet s (fst' $ step d pb e v) , e, pb)
 
-step d pb e (EPrint exp) = (exp, e, (show exp):pb)
+step d pb e (EPrint exp) = do
+  let (ex, env, pb') = evaluate d e exp pb
+  (exp, e, (show $ ex):pb)
 --call for function declaration
 step d pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
@@ -274,7 +276,7 @@ fst' :: (a, b, c) -> a
 fst' (x, y, z) = x
 
 snd' :: (a, b, c) -> b
-snd' (x, y, z) = y
+snd' (x, y, z) = y 
 
 thd :: (a, b, c) -> c
 thd (x, y, z) = z

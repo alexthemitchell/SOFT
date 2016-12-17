@@ -20,7 +20,7 @@ until_ env pred prompt = do
         until_ env pred prompt
     else if (take 8 result == ":explain")  then do
         let input =  (\(':':'e':'x':'p':'l':'a':'i':'n':xs) -> xs) result
-        let monad = parse.lexer $ input
+        let monad = parse.lexer $ stripComments $ input
         case monad of
           (Ok m) -> do
             let (ex,en,pb) = evaluate True env m []
