@@ -82,7 +82,7 @@ instance Show Exp where
     show (EStr s)  = s
     show (ELst []) ="[]"
     show (ELst l) = show l
-    show (EVar v) = v  
+    show (EVar v) = v
     show (EPar p) = show p
     show (EErr e)  = "Error: " ++ e
     show (EBinop e1 op e2) =
@@ -102,7 +102,7 @@ instance Show Exp where
     show (ENot e)     = "not " ++ (show e)
     show (EFst l)     = "first " ++ (show l)
     show ENil         = ""
-    show (ERst l)     = show l 
+    show (ERst l)     = show l
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty " ++ (show l)
     show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
@@ -215,13 +215,13 @@ step d pb e (ECons v l)
 step d pb e ENil = (ELst $ [],e, if d then (show ENil):pb else pb )
 step d pb e (EIf b e1 e2)
   | not $ value b = step d pb e (EIf (fst' $ step d pb e b) e1 e2)
-  | otherwise     = 
-     case b of 
+  | otherwise     =
+     case b of
       EBool b1 -> if b1 then step d pb e e1 else step d pb e e2
-      _        -> (EErr "If not given a boolean value", e, pb)
+      _        -> (EErr "if not given a boolean value", e, pb)
 --Applies defined function
 step d pb e (EApp s lv) =
-  case find s e of 
+  case find s e of
    (EFunc f lp e1) -> do
      let (ex, b) = eApply d [] lp lv e1 e
      (ex, e, if d then b++(show (EApp s lv)):pb else pb)
@@ -240,11 +240,11 @@ step d pb e (EPrint exp) = (exp, e, (show exp):pb)
 --call for function declaration
 step d pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
-  | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb) 
+  | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb)
   | otherwise = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), (s, (EFunc s l e1)):e, pb)
 
 eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
-eApply d pb s v exp env 
+eApply d pb s v exp env
   | not $ all value v = do
     let (ex, en, b) = step d pb env exp
     eApply d b s (map (\x -> if not $ value x then ex else x) v) exp env
@@ -265,7 +265,7 @@ find s ((s1, v1):xs)
   | s == s1   = v1
   | otherwise = find s xs
 
-findAndReplace :: String -> Exp -> Env -> Env  
+findAndReplace :: String -> Exp -> Env -> Env
 findAndReplace s v ((s1, v1):xs)
   | s == s1   = (s1, v):xs
   | otherwise = findAndReplace s v xs
@@ -279,7 +279,7 @@ snd' (x, y, z) = y
 thd :: (a, b, c) -> c
 thd (x, y, z) = z
 
-  
+
 evaluate :: Bool -> Env -> Exp -> Buffer  -> (Exp, Env, Buffer)
 evaluate d env exp pb
   | not $ value exp = (\(ex, en, pb) -> evaluate d en ex pb) (step d pb env exp)
