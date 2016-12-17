@@ -35,14 +35,14 @@ until_ env pred prompt = do
           case monad of
             (Ok m) -> do
               let (ex, en, pb) = evaluate False env m []
-              putStrLn $ show ex
+              printAll pb 
               until_ en pred prompt
             (Failed s) -> do
               putStrLn s
               until_ env pred prompt
 
 printAll :: [String] -> IO ()
-printAll [] =  putStrLn ""
+printAll [] =  putStr ""
 printAll (x:xs) = do
   putStrLn $ show x
   printAll xs
