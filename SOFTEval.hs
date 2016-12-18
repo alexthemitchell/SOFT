@@ -136,7 +136,7 @@ step d pb e (EBinop e1 op e2)
   | not $ value e2 = (EBinop e1 op (fst' $ step d pb e e2), e, if d then (show (EBinop e1 op e2)):pb else pb )
   | otherwise      =
      case (e1, op ,e2) of
-       (EInt n1, BAdd, EInt n2) -> (EInt $ n1 + n2, e, (if d then ((show n1) ++ "+" ++ (show n2)):pb else pb))
+       (EInt n1, BAdd, EInt n2) -> (EInt  $ n1 + n2, e, (if d then ((show n1) ++ "+" ++ (show n2)):pb else pb))
        (EInt n1, BAdd, EFlt f2) -> (EFlt  $ (fromIntegral n1) + f2, e, (if d then ((show n1) ++ "+" ++ (show f2)):pb else pb))
        (EFlt f1, BAdd, EInt n2) -> (EFlt  $ f1 + (fromIntegral n2),e, (if d then ((show f1) ++ "+" ++ (show n2)):pb else pb))
        (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2,e, (if d then ((show f1) ++ "+" ++ (show f2)):pb else pb))
@@ -147,7 +147,7 @@ step d pb e (EBinop e1 op e2)
        (EFlt f1, BSub, EFlt f2) -> (EFlt  $ f1 - f2,e, (if d then ((show f1) ++ "-" ++ (show f2)):pb else pb))
        ( _     , BSub, _      ) -> (EErr  $ "- takes ints or floats",e, pb)
        (EInt n1, BMul, EInt n2) -> (EInt  $ n1 * n2,e, (if d then ((show n1) ++ "*" ++ (show n2)):pb else pb))
-       (EFlt f1, BMul, EInt n2) -> (EFlt $ f1 * (fromIntegral n2),e, (if d then ((show f1) ++ "*" ++ (show n2)):pb else pb))
+       (EFlt f1, BMul, EInt n2) -> (EFlt  $ f1 * (fromIntegral n2),e, (if d then ((show f1) ++ "*" ++ (show n2)):pb else pb))
        (EInt n1, BMul, EFlt f2) -> (EFlt  $ (fromIntegral n1) * f2,e, (if d then ((show n1) ++ "*" ++ (show f2)):pb else pb))
        (EFlt f1, BMul, EFlt f2) -> (EFlt  $ f1 * f2,e, (if d then ((show f1) ++ "*" ++ (show f2)):pb else pb))
        ( _     , BMul, _      ) -> (EErr  $ "* takes ints or floats",e, pb)
@@ -236,9 +236,9 @@ step d pb e (ELet s v)
       (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e, pb)
       _               -> (ELet s (fst' $ step d pb e v) , e, pb)
 
-step d pb e (EPrint exp) = do
-  let (ex, env, pb') = evaluate d e exp pb
-  (exp, e, (show $ ex):pb)
+step d pb e (EPrint exp) =
+  let (ex, env,df) = evaluate True e exp pb in
+      (exp, e, pb++[(show $ ex)])
 --call for function declaration
 step d pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
@@ -276,7 +276,7 @@ fst' :: (a, b, c) -> a
 fst' (x, y, z) = x
 
 snd' :: (a, b, c) -> b
-snd' (x, y, z) = y 
+snd' (x, y, z) = y
 
 thd :: (a, b, c) -> c
 thd (x, y, z) = z
