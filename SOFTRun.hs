@@ -35,7 +35,8 @@ until_ env pred prompt = do
           case monad of
             (Ok m) -> do
               let (ex, en, pb) = evaluate False env m []
-              printAll pb 
+              printAll pb
+              putStrLn (show ex)
               until_ en pred prompt
             (Failed s) -> do
               putStrLn s
@@ -111,7 +112,7 @@ runCodeKernel e [x] pb = do
   let monad = parse x
   case monad of
     (Ok m) -> do
-      let (exp, env, pb) = evaluate True e m []--step False [] e m
+      let (exp, env, pb) = evaluate False e m []
       printAll pb
     (Failed s) -> putStrLn $ show $ EErr s
 runCodeKernel e (x:xs) pb = do
