@@ -105,21 +105,22 @@ runRepl = until_ [] (== ":quit") (readPrompt ">> ")
 runCode :: [String] -> IO ()
 runCode l =
     let tokenizedInput  = map lexer l in
-    runCodeKernel [] tokenizedInput []
+    runCodeKernel [] tokenizedInput
 
-runCodeKernel :: Env -> [[Token]] -> Buffer  -> IO()
-runCodeKernel e [x] pb =
+runCodeKernel :: Env -> [[Token]] -> IO()
+runCodeKernel e [x] =
   let monad = parse x in
   case monad of
     (Ok m) -> do
       let (exp, env, pb) = evaluate False e m []
       printAll pb
     (Failed s) -> putStrLn $ show $ EErr s
-runCodeKernel e (x:xs) pb =
+runCodeKernel e (x:xs) =
   let monad = parse x in
   case monad of
-    (Ok m) ->
-      let (_,env,pb') = evaluate False e m [] in
-      runCodeKernel env xs (pb ++ pb')
+    (Ok m) -> do
+      let (_,env,pb) = evaluate False e m []
+      printAll pb
+      runCodeKernel env xs 
     (Failed s) -> putStrLn $ show $  EErr s
 
