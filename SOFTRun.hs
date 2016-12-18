@@ -35,7 +35,7 @@ until_ env pred prompt = do
           case monad of
             (Ok m) -> do
               let (ex, en, pb) = evaluate False env m []
-              printAll pb 
+              printAll pb
               until_ en pred prompt
             (Failed s) -> do
               putStrLn s
@@ -60,12 +60,12 @@ splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
     splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
     where (functionName,rest) = span (/='{') xs
           (functionBody,extra)= matchDelim rest '{' '}' 0 ("","")
-splitProgram('(':xs) sofar = do
-    let (line,rest) = matchDelim ('(':xs) '(' ')' 0 ("","")
+splitProgram('(':xs) sofar =  
+    let (line,rest) = matchDelim ('(':xs) '(' ')' 0 ("","") in
     splitProgram rest (sofar ++ [line])
 splitProgram ('\n':xs) sofar = splitProgram xs sofar
-splitProgram s sofar = do
-    let (line,rest) = span (/= '\n') s
+splitProgram s sofar = 
+    let (line,rest) = span (/= '\n') s in
     splitProgram rest (sofar ++ [line])
 
 
@@ -102,24 +102,23 @@ runRepl = until_ [] (== ":quit") (readPrompt ">> ")
 
 
 runCode :: [String] -> IO ()
-runCode l = do
-    let tokenizedInput  = map lexer l
+runCode l =
+    let tokenizedInput  = map lexer l in
     runCodeKernel [] tokenizedInput []
 
 runCodeKernel :: Env -> [[Token]] -> Buffer  -> IO()
-runCodeKernel e [x] pb = do
-  let monad = parse x
+runCodeKernel e [x] pb =
+  let monad = parse x in
   case monad of
-    (Ok m) -> do
-      let (exp, env, pb) = evaluate True e m []--step False [] e m
-      printAll pb
+    (Ok m) ->
+      let (_,_,pb') = evaluate False e m [] in --step False [] e m
+      printAll pb'
     (Failed s) -> putStrLn $ show $ EErr s
-runCodeKernel e (x:xs) pb = do
-  let monad = parse x
+runCodeKernel e (x:xs) pb =
+  let monad = parse x in
   case monad of
-    (Ok m) -> (\(_, env, pb) -> do
-      printAll pb
-      runCodeKernel env xs []
-      ) $ step False [] e m
+    (Ok m) ->
+      let (_,env,pb') = evaluate False e m [] in
+      runCodeKernel env xs (pb ++ pb')
     (Failed s) -> putStrLn $ show $  EErr s
 
