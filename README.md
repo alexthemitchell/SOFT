@@ -1,6 +1,5 @@
 # The Simple Online Functional Teacher (SOFT) Language
-Whitepaper at https://alexthemitchell.com/SOFT.pdf
-
+Introduction to SOFT: http://soft-lang.org/TeachSOFT.pdf
 ## To Make and Run
   `make && ./soft`
 ## To Make Only
