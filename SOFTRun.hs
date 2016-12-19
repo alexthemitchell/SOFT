@@ -23,9 +23,7 @@ until_ env pred prompt = do
         let monad = parse.lexer $ stripComments $ input
         case monad of
           (Ok m) -> do
-            let (ex,en,pb) = evaluate True env m []
-            printAll (reverse pb)
-            putStrLn $ show ex
+            let (action, en) = evalAndPrintKernel True env m
             until_ en pred prompt
           (Failed s) -> do
             putStrLn s
@@ -95,8 +93,14 @@ flushStr str = putStr str >> hFlush stdout
 readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
-evalAndPrint :: String -> IO ()
-evalAndPrint input = print . parse . lexer $ input
+evalAndPrint :: Bool -> Env -> Exp -> IO ()
+evalAndPrint d env exp = let (action, _) = evalAndPrintKernel in action
+
+evalAndPrintKernel :: Bool -> Env -> Exp -> (IO (), Env)
+evalAndPrintKernel d env exp = do
+  let (ex, en, pb) = step d [] env exp
+  (printAll $ reverse pb, en)
+  let (action, env) = evalAndPrintKernel d en ex
 
 runRepl :: IO ()
 runRepl = until_ [] (== ":quit") (readPrompt ">> ")
