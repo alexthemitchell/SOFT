@@ -83,27 +83,27 @@ lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer
 
 lexNum cs
   | any (=='.') num   =  TokenFlt (read $ '0': num) : lexer rest
-  | otherwise         =  TokenInt (read num)            : lexer rest
+  | otherwise         =  TokenInt (read num)        : lexer rest
   where (num,rest)    =  span isNumSymbol cs
 
 
 lexVar cs =
   case span (\x->isAlpha x || isNumSymbol x) cs of
-      ("nil",rest)    -> TokenNil : lexer rest
-      (":",rest)      -> TokenCons : lexer rest
-      ("let",rest)    -> TokenLet : lexer rest
-      ("true",rest)   -> TokenTrue : lexer rest
-      ("false", rest) -> TokenFalse : lexer rest
-      ("mod", rest)   -> TokenMod : lexer rest
-      ("and", rest)   -> TokenAnd : lexer rest
-      ("or", rest)    -> TokenOr : lexer rest
-      ("not", rest)   -> TokenNot : lexer rest
-      ("if", rest)    -> TokenIf : lexer rest
-      ("then", rest)  -> TokenThen : lexer rest
-      ("else", rest)  -> TokenElse : lexer rest
-      ("first", rest) -> TokenFst  : lexer rest
-      ("empty", rest) -> TokenEmp  : lexer rest
-      ("rest" , rest) -> TokenRst  : lexer rest
+      ("nil",rest)    -> TokenNil         : lexer rest
+      (":",rest)      -> TokenCons        : lexer rest
+      ("let",rest)    -> TokenLet         : lexer rest
+      ("true",rest)   -> TokenTrue        : lexer rest
+      ("false", rest) -> TokenFalse       : lexer rest
+      ("mod", rest)   -> TokenMod         : lexer rest
+      ("and", rest)   -> TokenAnd         : lexer rest
+      ("or", rest)    -> TokenOr          : lexer rest
+      ("not", rest)   -> TokenNot         : lexer rest
+      ("if", rest)    -> TokenIf          : lexer rest
+      ("then", rest)  -> TokenThen        : lexer rest
+      ("else", rest)  -> TokenElse        : lexer rest
+      ("first", rest) -> TokenFst         : lexer rest
+      ("empty", rest) -> TokenEmp         : lexer rest
+      ("rest" , rest) -> TokenRst         : lexer rest
       ("function", rest) -> TokenFunction : lexer rest
-      ("print", rest) -> TokenPrint : lexer rest
-      (var,rest)      -> TokenVar var : lexer rest
+      ("print", rest) -> TokenPrint       : lexer rest
+      (var,rest)      -> TokenVar var     : lexer rest
