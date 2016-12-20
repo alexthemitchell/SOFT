@@ -238,7 +238,7 @@ step d pb e (ELet s v)
 
 step d pb e (EPrint exp) =
   let (ex, env,df) = evaluate True e exp pb in
-      (exp, e, pb++[(show $ ex)])
+      (exp, e, ((show $ ex) : pb))
 --call for function declaration
 step d pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
