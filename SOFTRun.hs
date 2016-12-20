@@ -91,7 +91,7 @@ main :: IO ()
 main = do args <- getArgs
           case length args of
             1 -> do
-              let code  = importCode $ readFile $ args !! 0
+              let code  <- importCode $ readFile $ args !! 0
               let noCom = stripComments code
               let loc   = splitProgram noCom [[]]
               runCode loc
