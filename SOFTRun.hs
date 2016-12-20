@@ -61,11 +61,11 @@ splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
     splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
     where (functionName,rest) = span (/='{') xs
           (functionBody,extra)= matchDelim rest '{' '}' 0 ("","")
-splitProgram('(':xs) sofar =  
+splitProgram('(':xs) sofar =
     let (line,rest) = matchDelim ('(':xs) '(' ')' 0 ("","") in
     splitProgram rest (sofar ++ [line])
 splitProgram ('\n':xs) sofar = splitProgram xs sofar
-splitProgram s sofar = 
+splitProgram s sofar =
     let (line,rest) = span (/= '\n') s in
     splitProgram rest (sofar ++ [line])
 
@@ -77,15 +77,23 @@ matchDelim [] _ _ _ _      = ("you","mismatched")
 matchDelim (x:xs) open close stck (before,_)
   | x == open  = matchDelim xs open close (stck+1) (before++[x],"")
   | x == close = matchDelim xs open close (stck-1) (before++[x],"")
-  | otherwise  = matchDelim xs open close stck (before++[x], "")
+  | otherwise  = matchDelim xs open close  stck    (before++[x],"")
+
+importCode :: IO String -> IO String
+importCode file = do code <- file
+                     if take 5 code == "import" then do
+                     let (_,path) = span(/= ' ') code
+                     newCode <- readFile path
+                     importCode (code++newCode)
+                     else code
 
 main :: IO ()
 main = do args <- getArgs
           case length args of
             1 -> do
-              code <- readFile $ args !! 0
+              let code  = importCode $ readFile $ args !! 0
               let noCom = stripComments code
-              let loc = splitProgram noCom [[]]
+              let loc   = splitProgram noCom [[]]
               runCode loc
             otherwise -> runRepl
 
@@ -121,6 +129,6 @@ runCodeKernel e (x:xs) =
     (Ok m) -> do
       let (_,env,pb) = evaluate False e m []
       printAll pb
-      runCodeKernel env xs 
+      runCodeKernel env xs
     (Failed s) -> putStrLn $ show $  EErr s
 
