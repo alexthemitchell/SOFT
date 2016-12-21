@@ -78,14 +78,25 @@ lexer ('>':cs)         = TokenGT : lexer cs
 lexer ('=':cs)         = TokenEqual : lexer cs
 lexer (',':cs)         = TokenComma : lexer cs
 
+-- Returns True if a string is completed, False if not
+isStr :: Char -> Char -> Bool
+isStr '\\' '"' = False 
+isStr '"' _ = False 
+isStr _ _ = True
+
+spanStr :: String -> (String, String)
+spanStr (x:[]) = ([x], [])
+spanStr (x:y:cs) 
+  | isStr x y = let (ys,zs) = spanStr cs in (x:ys,zs)
+  | otherwise = ([], cs)
+
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
-  where (str, rest) = span (\x -> x /= '"') cs
+  where (str, rest) = spanStr cs 
 
 lexNum cs
   | any (=='.') num   =  TokenFlt (read $ '0': num) : lexer rest
   | otherwise         =  TokenInt (read num)        : lexer rest
   where (num,rest)    =  span isNumSymbol cs
-
 
 lexVar cs =
   case span (\x->isAlpha x || isNumSymbol x) cs of
