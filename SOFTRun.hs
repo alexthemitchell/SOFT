@@ -79,12 +79,13 @@ matchDelim (x:xs) open close stck (before,_)
   | x == close = matchDelim xs open close (stck-1) (before++[x],"")
   | otherwise  = matchDelim xs open close  stck    (before++[x],"")
 
---return list of paths that need to be imported
-findPaths :: String -> [String]
-findPaths []        = []
-findPaths ('\n':xs) = findPaths xs
-findPaths ('i':'m':'p':'o':'r':'t':xs) = path : (findPaths rest)
-                                         where (path,rest) = span (/= '\n') xs
+--return list of paths that need to be imported and rest of the contents of the file after import statements
+findPaths :: String -> ([String],String) -> ([String],String)
+findPaths [] sofar                                  = sofar
+findPaths ('\n':xs) sofar                           = findPaths xs sofar
+findPaths ('i':'m':'p':'o':'r':'t':xs) (paths,_)    = findPaths rest (tail path:paths,[])
+                                  where (path,rest) = span (/= '\n') xs
+findPaths rest (paths,_)                            = findPaths [] (paths,rest)
 
 --takes list of path names, reads in each file and concats
 foldCode :: [String] -> String -> IO String
@@ -94,9 +95,9 @@ foldCode (x:xs) sofar = do code <- readFile x
 
 importCode :: IO String -> IO String
 importCode file = do code <- file
-                     let paths = findPaths code
-                     foldCode paths
-
+                     let (paths,rest) = findPaths code ([[]],[])
+                     folded <- foldCode paths ""
+                     return (rest ++ folded)
 main :: IO ()
 main = do args <- getArgs
           case length args of
