@@ -84,7 +84,7 @@ findPaths :: String -> ([String],String) -> ([String],String)
 findPaths [] sofar                                  = sofar
 findPaths ('\n':xs) sofar                           = findPaths xs sofar
 findPaths ('i':'m':'p':'o':'r':'t':xs) (paths,_)    = findPaths rest (tail path:paths,[])
-                                  where (path,rest) = span (/= '\n') xs
+                               where   (path,rest)  = span (/= '\n') xs
 findPaths rest (paths,_)                            = findPaths [] (paths,rest)
 
 --takes list of path names, reads in each file and concats
@@ -95,9 +95,9 @@ foldCode (x:xs) sofar = do code <- readFile x
 
 importCode :: IO String -> IO String
 importCode file = do code <- file
-                     let (paths,rest) = findPaths code ([[]],[])
+                     let (paths,rest) = findPaths code ([],[])
                      folded <- foldCode paths ""
-                     return (rest ++ folded)
+                     return (folded ++ rest)
 main :: IO ()
 main = do args <- getArgs
           case length args of
