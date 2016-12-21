@@ -71,7 +71,7 @@ splitProgram s sofar =
 
 
 --Precondition: the first character of the program must be the deliminator
-matchDelim  :: String -> Char -> Char -> Int -> (String,String) -> (String,String)
+matchDelim :: String -> Char -> Char -> Int -> (String,String) -> (String,String)
 matchDelim (x:xs) o c 0 (before, _ ) = if before == [] then matchDelim xs o c 1 (x:"","") else (before, xs)
 matchDelim [] _ _ _ _      = ("you","mismatched")
 matchDelim (x:xs) open close stck (before,_)
@@ -79,19 +79,29 @@ matchDelim (x:xs) open close stck (before,_)
   | x == close = matchDelim xs open close (stck-1) (before++[x],"")
   | otherwise  = matchDelim xs open close  stck    (before++[x],"")
 
+--return list of paths that need to be imported
+findPaths :: String -> [String]
+findPaths []        = []
+findPaths ('\n':xs) = findPaths xs
+findPaths ('i':'m':'p':'o':'r':'t':xs) = path : (findPaths rest)
+                                         where (path,rest) = span (/= '\n') xs
+
+--takes list of path names, reads in each file and concats
+foldCode :: [String] -> String -> IO String
+foldCode [] sofar     = return sofar
+foldCode (x:xs) sofar = do code <- readFile x
+                           foldCode xs (sofar ++ code)
+
 importCode :: IO String -> IO String
 importCode file = do code <- file
-                     if take 5 code == "import" then do
-                     let (_,path) = span(/= ' ') code
-                     newCode <- readFile path
-                     importCode (code++newCode)
-                     else code
+                     let paths = findPaths code
+                     foldCode paths
 
 main :: IO ()
 main = do args <- getArgs
           case length args of
             1 -> do
-              let code  <- importCode $ readFile $ args !! 0
+              code  <- importCode $ readFile $ args !! 0
               let noCom = stripComments code
               let loc   = splitProgram noCom [[]]
               runCode loc
