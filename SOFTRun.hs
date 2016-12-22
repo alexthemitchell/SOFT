@@ -61,31 +61,52 @@ splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
     splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
     where (functionName,rest) = span (/='{') xs
           (functionBody,extra)= matchDelim rest '{' '}' 0 ("","")
-splitProgram('(':xs) sofar =  
+splitProgram('(':xs) sofar =
     let (line,rest) = matchDelim ('(':xs) '(' ')' 0 ("","") in
     splitProgram rest (sofar ++ [line])
 splitProgram ('\n':xs) sofar = splitProgram xs sofar
-splitProgram s sofar = 
+splitProgram s sofar =
     let (line,rest) = span (/= '\n') s in
     splitProgram rest (sofar ++ [line])
 
 
 --Precondition: the first character of the program must be the deliminator
-matchDelim  :: String -> Char -> Char -> Int -> (String,String) -> (String,String)
+matchDelim :: String -> Char -> Char -> Int -> (String,String) -> (String,String)
 matchDelim (x:xs) o c 0 (before, _ ) = if before == [] then matchDelim xs o c 1 (x:"","") else (before, xs)
 matchDelim [] _ _ _ _      = ("you","mismatched")
 matchDelim (x:xs) open close stck (before,_)
   | x == open  = matchDelim xs open close (stck+1) (before++[x],"")
   | x == close = matchDelim xs open close (stck-1) (before++[x],"")
-  | otherwise  = matchDelim xs open close stck (before++[x], "")
+  | otherwise  = matchDelim xs open close  stck    (before++[x],"")
 
+--return: ([paths for import],file contents after import)
+findPaths :: String -> ([String],String) -> ([String],String)
+findPaths [] sofar                                  = sofar
+findPaths ('\n':xs) sofar                           = findPaths xs sofar
+findPaths ('i':'m':'p':'o':'r':'t':xs) (paths,_)    = findPaths rest (tail path:paths,[])
+                               where   (path,rest)  = span (/= '\n') xs
+findPaths rest (paths,_)                            = findPaths [] (paths,rest)
+
+--takes list of path names, reads in each file, checks for more imports, concats files
+foldCode :: [String] -> String -> IO String
+foldCode [] sofar     = return sofar
+foldCode (x:xs) sofar = do code <- readFile x
+                           let (paths,rest) = findPaths code ([],[])
+                           if paths == [] then foldCode xs (sofar ++ rest)
+                           else foldCode (paths ++ xs)     (sofar ++ rest)
+--helper function for foldCode
+importCode :: IO String -> IO String
+importCode file = do code <- file
+                     let (paths,rest) = findPaths code ([],[])
+                     folded <- foldCode paths ""
+                     return (folded ++ rest)
 main :: IO ()
 main = do args <- getArgs
           case length args of
             1 -> do
-              code <- readFile $ args !! 0
+              code  <- importCode $ readFile $ args !! 0
               let noCom = stripComments code
-              let loc = splitProgram noCom [[]]
+              let loc   = splitProgram noCom [[]]
               runCode loc
             otherwise -> runRepl
 
@@ -121,6 +142,6 @@ runCodeKernel e (x:xs) =
     (Ok m) -> do
       let (_,env,pb) = evaluate False e m []
       printAll pb
-      runCodeKernel env xs 
+      runCodeKernel env xs
     (Failed s) -> putStrLn $ show $  EErr s
 
