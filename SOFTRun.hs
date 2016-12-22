@@ -79,7 +79,7 @@ matchDelim (x:xs) open close stck (before,_)
   | x == close = matchDelim xs open close (stck-1) (before++[x],"")
   | otherwise  = matchDelim xs open close  stck    (before++[x],"")
 
---return list of paths that need to be imported and rest of the contents of the file after import statements
+--return: ([paths for import],file contents after import)
 findPaths :: String -> ([String],String) -> ([String],String)
 findPaths [] sofar                                  = sofar
 findPaths ('\n':xs) sofar                           = findPaths xs sofar
@@ -87,12 +87,14 @@ findPaths ('i':'m':'p':'o':'r':'t':xs) (paths,_)    = findPaths rest (tail path:
                                where   (path,rest)  = span (/= '\n') xs
 findPaths rest (paths,_)                            = findPaths [] (paths,rest)
 
---takes list of path names, reads in each file and concats
+--takes list of path names, reads in each file, checks for more imports, concats files
 foldCode :: [String] -> String -> IO String
 foldCode [] sofar     = return sofar
 foldCode (x:xs) sofar = do code <- readFile x
-                           foldCode xs (sofar ++ code)
-
+                           let (paths,rest) = findPaths code ([],[])
+                           if paths == [] then foldCode xs (sofar ++ rest)
+                           else foldCode (paths ++ xs)     (sofar ++ rest)
+--helper function for foldCode
 importCode :: IO String -> IO String
 importCode file = do code <- file
                      let (paths,rest) = findPaths code ([],[])
