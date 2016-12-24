@@ -51,33 +51,35 @@ printAll (x:xs) = do
 stripComments :: String -> String
 stripComments []       = []
 stripComments ('#':xs) = stripComments rest
-  where (line,rest) = span (/= '\n') xs
+  where (line,rest)    = span (/= '\n') xs
 stripComments (x:xs)   = x:stripComments xs
 
 splitProgram :: String -> [String] -> [String]
-splitProgram [] sofar = sofar
-splitProgram program ("":xs) = splitProgram program xs
-splitProgram ('f':'u':'n':'c':'t':'i':'o':'n':xs) sofar =
-    splitProgram extra (sofar ++ ["function" ++ functionName ++ functionBody])
-    where (functionName,rest) = span (/='{') xs
-          (functionBody,extra)= matchDelim rest '{' '}' 0 ("","")
-splitProgram('(':xs) sofar =
-    let (line,rest) = matchDelim ('(':xs) '(' ')' 0 ("","") in
-    splitProgram rest (sofar ++ [line])
-splitProgram ('\n':xs) sofar = splitProgram xs sofar
-splitProgram s sofar =
-    let (line,rest) = span (/= '\n') s in
-    splitProgram rest (sofar ++ [line])
+splitProgram [] sofar     = sofar
+splitProgram s ("":xs)    = splitProgram s xs
+splitProgram s sofar      = splitProgram rest (line : sofar)
+                             where (line,rest) = findLine s ([],[])
 
+findLine :: String -> (String,String) -> (String, String)
+findLine ('\n':xs) (sofar,_) = (sofar,xs)
+findLine ('f':'u':'n':'c':'t':'i':'o':'n':xs) _ =
+    (functionBody ++ (reverse functionName) ++ "noitcnuf",rest)
+    where (functionName,extra) = span (/='{') xs
+          (functionBody,rest)= matchDelim extra '{' '}' 0 ("","")
+
+findLine ('(':xs) (sofar,_)  = let (line,rest) = matchDelim ('(':xs) '(' ')' 0 ("","") in
+                              (line++sofar,rest)
+findLine (x:xs) (sofar,_)    = findLine xs (x:sofar,[])
 
 --Precondition: the first character of the program must be the deliminator
 matchDelim :: String -> Char -> Char -> Int -> (String,String) -> (String,String)
-matchDelim (x:xs) o c 0 (before, _ ) = if before == [] then matchDelim xs o c 1 (x:"","") else (before, xs)
+matchDelim (x:xs) o c 0 (before, _ ) = if before == [] then matchDelim xs o c 1 (x:"","")
+                                       else (before, xs)
 matchDelim [] _ _ _ _      = ("you","mismatched")
 matchDelim (x:xs) open close stck (before,_)
-  | x == open  = matchDelim xs open close (stck+1) (before++[x],"")
-  | x == close = matchDelim xs open close (stck-1) (before++[x],"")
-  | otherwise  = matchDelim xs open close  stck    (before++[x],"")
+  | x == open  = matchDelim xs open close (stck+1) (x:before,"")
+  | x == close = matchDelim xs open close (stck-1) (x:before,"")
+  | otherwise  = matchDelim xs open close  stck    (x:before,"")
 
 --return: ([paths for import],file contents after import)
 findPaths :: String -> ([String],String) -> ([String],String)
@@ -106,7 +108,7 @@ main = do args <- getArgs
             1 -> do
               code  <- importCode $ readFile $ args !! 0
               let noCom = stripComments code
-              let loc   = splitProgram noCom [[]]
+              let loc   = reverse $ map reverse $ splitProgram noCom [[]]
               runCode loc
             otherwise -> runRepl
 
