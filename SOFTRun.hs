@@ -15,6 +15,8 @@ until_ env pred prompt = do
     let result = stripComments r
     if pred result
         then return ()
+    else if result == ""
+        then until_ env pred prompt
     else if result == ":env" then do
         putStrLn $ show env
         until_ env pred prompt
@@ -56,7 +58,7 @@ stripComments (x:xs)   = x:stripComments xs
 
 splitProgram :: String -> [String] -> [String]
 splitProgram [] sofar     = sofar
-splitProgram ('\n':xs) sofar  = splitProgram xs sofar 
+splitProgram ('\n':xs) sofar  = splitProgram xs sofar
 splitProgram s ("":xs)    = splitProgram s xs
 splitProgram s sofar      = splitProgram rest (line : sofar)
                              where (line,rest) = findLine s ([],[])
