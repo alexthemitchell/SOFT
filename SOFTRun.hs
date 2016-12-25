@@ -56,6 +56,7 @@ stripComments (x:xs)   = x:stripComments xs
 
 splitProgram :: String -> [String] -> [String]
 splitProgram [] sofar     = sofar
+splitProgram ('\n':xs) sofar  = splitProgram xs sofar 
 splitProgram s ("":xs)    = splitProgram s xs
 splitProgram s sofar      = splitProgram rest (line : sofar)
                              where (line,rest) = findLine s ([],[])
