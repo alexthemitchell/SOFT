@@ -1,6 +1,27 @@
 module SOFTLexer where
 import Data.Char
 
+data ParseResult a = Ok a | Failed String
+		   type E a = String -> ParseResult a
+
+		   thenE :: E a -> (a -> E b) -> E b
+		   m `thenP` k = \s ->
+		      case m s of 
+		             Ok a -> k a s
+			     	 Failed e -> Failed e
+
+				 returnE :: a -> E a
+				 returnE a = \s -> Ok a
+
+				 failE :: String -> P a
+				 failE err = \s -> Failed err
+
+				 catchP :: P a -> (String -> P a) -> P a
+				 catchP m k = \s ->
+				    case m s of
+		      Ok a -> OK a
+		      	Failed e -> k e s
+
 -- Token types --
 data Token
       = TokenInt Int
@@ -44,13 +65,14 @@ data Token
       | TokenRSqBrkt
       | TokenComma
       | TokenPrint
+      | TokenEOF
  deriving Show
 
 isNumSymbol :: Char -> Bool
 isNumSymbol c = isDigit c || c == '.'
 
 -- Lexer --
-lexer :: String -> [Token]
+lexer :: (Token -> E a) -> E a
 lexer []               = []
 lexer ('\n':cs)        = lexer cs
 lexer ('"':cs)         = lexStr cs
@@ -106,4 +128,5 @@ lexVar cs =
       ("rest" , rest) -> TokenRst         : lexer rest
       ("function", rest) -> TokenFunction : lexer rest
       ("print", rest) -> TokenPrint       : lexer rest
+      ("EOF", rest)   -> TokenEOF         : lexer rest
       (var,rest)      -> TokenVar var     : lexer rest
