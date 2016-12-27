@@ -63,7 +63,7 @@ data Exp where
   EPar  :: String -> Exp
   EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations
-  EApp  :: String -> [Exp] -> Exp --Applies given function to expressio
+  EApp  :: String -> [Exp] -> Exp --Applies given function to expression
   EPrint:: Exp -> Exp
   EIf   :: Exp -> Exp -> Exp -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
@@ -247,12 +247,12 @@ step d pb e (EFunc s l e1)
 
 eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
 eApply d pb s v exp env
-  | not $ all value v = do
-    let (ex, en, b) = step d pb env exp
+  | not $ all value v =
+    let (ex, en, b) = step d pb env exp in
     eApply d b s (map (\x -> if not $ value x then ex else x) v) exp env
   | value exp         = (exp, pb)
-  | otherwise         = do
-    let (ex, en, b) = step d pb ((zip s v)++env) exp
+  | otherwise         =
+    let (ex, en, b)   = step d pb ((zip s v)++env) exp in
     eApply d b s v ex env
 
 existsIn :: String -> Env -> Bool
