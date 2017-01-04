@@ -2,25 +2,29 @@ module SOFTLexer where
 import Data.Char
 
 data ParseResult a = Ok a | Failed String
-		   type E a = String -> ParseResult a
+type LineNumber = Int
+type P a = String -> LineNumber -> ParseResult a
 
-		   thenE :: E a -> (a -> E b) -> E b
-		   m `thenP` k = \s ->
-		      case m s of 
-		             Ok a -> k a s
-			     	 Failed e -> Failed e
+getLineNo :: P LineNumber
+getLineNo = \s l -> Ok l
 
-				 returnE :: a -> E a
-				 returnE a = \s -> Ok a
+thenP :: P a -> (a -> P b) -> P b
+m `thenP` k = \s ->
+  case m s of 
+    Ok a -> k a s
+    Failed e -> Failed e
 
-				 failE :: String -> P a
-				 failE err = \s -> Failed err
+returnP :: a -> P a
+returnP a = \s -> Ok a
 
-				 catchP :: P a -> (String -> P a) -> P a
-				 catchP m k = \s ->
-				    case m s of
-		      Ok a -> OK a
-		      	Failed e -> k e s
+failP :: String -> P a
+failP err = \s -> Failed err
+
+catchP :: P a -> (String -> P a) -> P a
+catchP m k = \s ->
+  case m s of
+    Ok a -> Ok a
+    Failed e -> k e s
 
 -- Token types --
 data Token
@@ -71,34 +75,37 @@ data Token
 isNumSymbol :: Char -> Bool
 isNumSymbol c = isDigit c || c == '.'
 
+-- Returns need to be changed, leaving broken for now.
 -- Lexer --
-lexer :: (Token -> E a) -> E a
-lexer []               = []
-lexer ('\n':cs)        = lexer cs
-lexer ('"':cs)         = lexStr cs
-lexer (c:cs)
-      | isSpace c      = lexer cs
-      | isAlpha c      = lexVar (c:cs)
-      | isNumSymbol c  = lexNum (c:cs)
-lexer ('+':cs)         = TokenPlus : lexer cs
-lexer ('-':cs)         = TokenMinus : lexer cs
-lexer ('*':cs)         = TokenAsterisk : lexer cs
-lexer ('/':cs)         = TokenFSlash : lexer cs
-lexer ('\'':x:'\'':cs) = TokenChar x : lexer cs
-lexer ('(':cs)         = TokenLParen : lexer cs
-lexer (')':cs)         = TokenRParen : lexer cs
-lexer ('{':cs)         = TokenLBrace : lexer cs
-lexer ('}':cs)         = TokenRBrace : lexer cs
-lexer ('[':cs)         = TokenLSqBrkt : lexer cs
-lexer (']':cs)         = TokenRSqBrkt : lexer cs
-lexer (':':cs)         = TokenCons : lexer cs
-lexer ('<':'=':cs)     = TokenLEQ : lexer cs
-lexer ('>':'=':cs)     = TokenGEQ : lexer cs
-lexer ('=':'=':cs)     = TokenDoubleEqual : lexer cs
-lexer ('<':cs)         = TokenLT : lexer cs
-lexer ('>':cs)         = TokenGT : lexer cs
-lexer ('=':cs)         = TokenEqual : lexer cs
-lexer (',':cs)         = TokenComma : lexer cs
+lexer :: (Token -> P a) -> P a
+lexer cont s = 
+  case s of 
+    []                 -> []
+    ('\n':cs)          -> lexer cs
+    ('"':cs)           -> lexStr cs
+    (c:cs)
+       | isSpace c     -> lexer cs
+       | isAlpha c     -> lexVar (c:cs)
+       | isNumSymbol c -> lexNum (c:cs)
+    ('+':cs)           -> TokenPlus : lexer cs
+    ('-':cs)           -> TokenMinus : lexer cs
+    ('*':cs)           -> TokenAsterisk : lexer cs
+    ('/':cs)           -> TokenFSlash : lexer cs
+    ('\'':x:'\'':cs)   -> TokenChar x : lexer cs
+    ('(':cs)           -> TokenLParen : lexer cs
+    (')':cs)           -> TokenRParen : lexer cs
+    ('{':cs)           -> TokenLBrace : lexer cs
+    ('}':cs)           -> TokenRBrace : lexer cs
+    ('[':cs)           -> TokenLSqBrkt : lexer cs
+    (']':cs)           -> TokenRSqBrkt : lexer cs
+    (':':cs)           -> TokenCons : lexer cs
+    ('<':'=':cs)       -> TokenLEQ : lexer cs
+    ('>':'=':cs)       -> TokenGEQ : lexer cs
+    ('=':'=':cs)       -> TokenDoubleEqual : lexer cs
+    ('<':cs)           -> TokenLT : lexer cs
+    ('>':cs)           -> TokenGT : lexer cs
+    ('=':cs)           -> TokenEqual : lexer cs
+    (',':cs)           -> TokenComma : lexer cs
 
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
   where (str, rest) = span (\x -> x /= '"') cs
