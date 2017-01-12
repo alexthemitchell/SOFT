@@ -21,19 +21,25 @@ until_ env pred prompt = do
         putStrLn $ show env
         until_ env pred prompt
     else if (take 8 result == ":explain")  then do
-        let input =  (\(':':'e':'x':'p':'l':'a':'i':'n':xs) -> xs) result
-        let monad = parse.lexer $ stripComments $ input
-        case monad of
-          (Ok m) -> do
-            let (ex,en,pb) = evaluate True env m []
-            printAll (reverse pb)
-            putStrLn $ show ex
-            until_ en pred prompt
-          (Failed s) -> do
-            putStrLn s
-            until_ env pred prompt
+      let input =  (\(':':'e':'x':'p':'l':'a':'i':'n':xs) -> xs) result
+      let monad = parse.lexer $ stripComments $ input
+      case monad of
+        (Ok m) -> do
+          let (ex,en,pb) = evaluate True env m []
+          printAll (reverse pb)
+          putStrLn $ show ex
+          until_ en pred prompt
+        (Failed s) -> do
+          putStrLn s
+          until_ env pred prompt
+    else if (take 6 result == "import")  then do
+      code <- importCode $ (\str -> return str) result
+      let noCom = stripComments code
+      let loc   = reverse $ map reverse $ splitProgram noCom [[]]
+      let importedEnv   = runCode' loc
+      until_ (env ++ runCode' loc) pred prompt
     else do
-          let monad = parse .lexer $ result
+          let monad = parse . lexer $ result
           case monad of
             (Ok m) -> do
               let (ex, en, pb) = evaluate False env m []
@@ -99,7 +105,7 @@ foldCode (x:xs) sofar = do code <- readFile x
                            let (paths,rest) = findPaths code ([],[])
                            if paths == [] then foldCode xs (sofar ++ rest)
                            else foldCode (paths ++ xs)     (sofar ++ rest)
---helper function for foldCode
+--wrapper function for foldCode
 importCode :: IO String -> IO String
 importCode file = do code <- file
                      let (paths,rest) = findPaths code ([],[])
@@ -137,8 +143,8 @@ runCodeKernel :: Env -> [[Token]] -> IO()
 runCodeKernel e [x] =
   let monad = parse x in
   case monad of
-    (Ok m) -> do
-      let (exp, env, pb) = evaluate False e m []
+    (Ok m) ->
+      let (_, _, pb) = evaluate False e m [] in
       printAll pb
     (Failed s) -> putStrLn $ show $ EErr s
 runCodeKernel e (x:xs) =
@@ -149,4 +155,28 @@ runCodeKernel e (x:xs) =
       printAll pb
       runCodeKernel env xs
     (Failed s) -> putStrLn $ show $  EErr s
+
+--Same as the above definitions, but returns an enviroment. For use in REPL
+runCode' :: [String] -> Env
+runCode' l =
+    let tokenizedInput  = map lexer l in
+      let env = runCodeKernel' [] tokenizedInput in
+        case env of
+          (Just env) -> env
+          Nothing    -> []
+
+runCodeKernel' :: Env -> [[Token]] -> Maybe Env
+runCodeKernel' e [x] =
+  let monad = parse x in
+  case monad of
+    (Ok m) ->
+       Just (snd' $ evaluate False e m [])
+    (Failed s) -> Nothing
+runCodeKernel' e (x:xs) =
+  let monad = parse x in
+  case monad of
+    (Ok m) -> do
+      let (_,env,_) = evaluate False e m [] in
+        runCodeKernel' env xs
+    (Failed s) -> Nothing
 
