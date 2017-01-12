@@ -160,23 +160,20 @@ runCodeKernel e (x:xs) =
 runCode' :: [String] -> Env
 runCode' l =
     let tokenizedInput  = map lexer l in
-      let env = runCodeKernel' [] tokenizedInput in
-        case env of
-          (Just env) -> env
-          Nothing    -> []
+      runCodeKernel' [] tokenizedInput
 
-runCodeKernel' :: Env -> [[Token]] -> Maybe Env
+runCodeKernel' :: Env -> [[Token]] -> Env
 runCodeKernel' e [x] =
   let monad = parse x in
   case monad of
     (Ok m) ->
-       Just (snd' $ evaluate False e m [])
-    (Failed s) -> Nothing
+       snd' $ evaluate False e m []
+    (Failed s) -> []
 runCodeKernel' e (x:xs) =
   let monad = parse x in
   case monad of
     (Ok m) -> do
       let (_,env,_) = evaluate False e m [] in
         runCodeKernel' env xs
-    (Failed s) -> Nothing
+    (Failed s) -> []
 
