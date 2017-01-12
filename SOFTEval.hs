@@ -247,13 +247,11 @@ step d pb e (EFunc s l e1)
 
 eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
 eApply d pb s v exp env
-  | not $ all value v =
-    let (ex, en, b) = step d pb env exp in
-    eApply d b s (map (\x -> if not $ value x then ex else x) v) exp env
   | value exp         = (exp, pb)
   | otherwise         =
-    let (ex, en, b)   = step d pb ((zip s v)++env) exp in
-    eApply d b s v ex env
+    let vals = map (\val -> fst' $ evaluate d env val pb ) v in
+      let (ex, en, b)   = step d pb ((zip s vals)++env) exp in
+                          eApply d b s vals ex env
 
 existsIn :: String -> Env -> Bool
 existsIn _ []   = False
