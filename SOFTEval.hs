@@ -251,7 +251,7 @@ eApply d pb s v exp env
   | otherwise         =
     let vals = map (\val -> fst' $ evaluate d env val pb ) v in
       let (ex, en, b)   = step d pb ((zip s vals)++env) exp in
-                          eApply d b s vals ex env
+                          eApply d b s vals ex en
 
 existsIn :: String -> Env -> Bool
 existsIn _ []   = False
