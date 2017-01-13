@@ -222,8 +222,8 @@ step d pb e (EIf b e1 e2)
 --Applies defined function
 step d pb e (EApp s lv) =
   case find s e of
-   (EFunc f lp e1) -> do
-     let (ex, b) = eApply d [] lp lv e1 e
+   (EFunc f lp e1) ->
+     let (ex, b) = eApply d [] lp lv e1 e in
      (ex, e, if d then b++(show (EApp s lv)):pb else pb)
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
 --call for variable declaration
