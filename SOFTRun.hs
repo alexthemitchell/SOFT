@@ -37,7 +37,7 @@ until_ env pred prompt = do
       let noCom = stripComments code
       let loc   = reverse $ map reverse $ splitProgram noCom [[]]
       let importedEnv   = runCode' loc
-      until_ (env ++ runCode' loc) pred prompt
+      until_ (mergeEnv (runCode' loc) env) pred prompt
     else do
           let monad = parse . lexer $ result
           case monad of
@@ -49,6 +49,26 @@ until_ env pred prompt = do
             (Failed s) -> do
               putStrLn s
               until_ env pred prompt
+
+
+{-
+From Data.List.Utils
+| Adds the specified (key, value) pair to the given list, removing any
+existing pair with the same key already present. -}
+addToAL :: Eq key => [(key, elt)] -> key -> elt -> [(key, elt)]
+addToAL l key value = (key, value) : delFromAL l key
+
+{-
+From Data.List.Utils
+| Removes all (key, value) pairs from the given list where the key
+matches the given one. -}
+delFromAL :: Eq key => [(key, a)] -> key -> [(key, a)]
+delFromAL l key = filter (\a -> (fst a) /= key) l
+
+mergeEnv :: Env -> Env -> Env
+mergeEnv [] orig = orig
+mergeEnv (x:xs) orig = mergeEnv xs (addToAL orig (fst x) (snd x))
+
 
 printAll :: [String] -> IO ()
 printAll [] =  putStr ""
