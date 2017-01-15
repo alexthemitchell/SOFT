@@ -1,34 +1,42 @@
-#function And (list) {
-#  if (empty list) { 
-#    true
-#  } else {
-#    (first list) and And(rest list)
-#  }
-#}
+function Sum(list) {
+  if (empty(list)) {
+    0
+  } else {
+    first(list) + Sum(rest(list))
+  }
+}
 
-#function Sum(list) {
-#  if (empty list) then 0
-#  else (first list) + Sum(rest list)
-#}
+function Length(list) {
+  if (empty(list)) {
+    0
+  } else {
+    1 + Length(rest(list))
+  }
+}
 
-#function Product(list) {
-#  if (empty list) then 1
-#  else (first list) * Sum (rest list)
-#}
+function max(a,b) {
+  if ((a > b)) {
+    a
+  } else {
+    b
+  }
+}
+
+function equal(list1,list2) {
+  if ((empty(list1) or empty(list2))) {
+    (empty(list1) and empty(list2))
+  } else {
+    ((first(list1) == first(list2)) and equal(rest(list1),rest(list2)))
+  }
+}
+
+function singleton(list) {
+  equal(rest(list),[])
+}
 
 #function Maximum(list) {
-#  if (rest list == []) then (first list)
-#  else if (first list > Maximum(rest list)) then (first list)
-#  else Maximum(rest list)
-#}
-
-#function Remove(value,list) {
-#  if (empty list) then []
-#  else if (first list == value) then (rest list)
-#  else value:Remove(value,list)
-#}
-
-#function Sort(list) {
-#  if (empty list) then []
-#  else Maximum(list):Sort(Remove(Maximum(list),list))
-#}
+#  if (singleton(list)) {
+#   first(list) 
+#  } else {
+#    max(first(list), Maximum(rest(list)))
+#  }

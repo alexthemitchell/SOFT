@@ -107,9 +107,10 @@ Value   : '-' int           { EInt $ negate $2 }
 
 Bool    : true              { EBool True }
         | false             { EBool False }
+        | var               { EVar $1}
         | 'not' '(' Bool ')'{ ENot $3 }
-        | '(' Bool 'and' Bool ')'   { EBinop $2 BAnd $4 }
-        | '(' Bool 'or' Bool ')'    { EBinop $2 BOr $4 }
+        | '(' Closure 'and' Closure ')'   { EBinop $2 BAnd $4 }
+        | '(' Closure 'or' Closure ')'    { EBinop $2 BOr $4 }
         | '('Closure '==' Closure  ')' { EBinop $2 BEql $4 }
         | '('Closure '<' Closure ')'     { EBinop $2 BLtn $4 }
         | '('Closure '>' Closure ')' { EBinop $2 BGtn $4 }
