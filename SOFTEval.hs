@@ -99,15 +99,15 @@ instance Show Exp where
       BGeq -> "(" ++ (show e1) ++ " >= "  ++ (show e2) ++ ")"
       BAnd -> "(" ++ (show e1) ++ " and " ++ (show e2) ++ ")"
       BOr  -> "(" ++ (show e1) ++ " or "  ++ (show e2) ++ ")"
-    show (ENot e)     = "not " ++ (show e)
-    show (EFst l)     = "first " ++ (show l)
+    show (ENot e)     = "not(" ++ (show e) ++ ")"
+    show (EFst l)     = "first(" ++ (show l) ++ ")"
     show ENil         = ""
-    show (ERst l)     = show l
+    show (ERst l)     = "rest(" ++ show l ++ ")"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
-    show (EEmt l)     = "empty " ++ (show l)
+    show (EEmt l)     = "empty(" ++ (show l) ++ ")"
     show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
-    show (EApp x e) = x ++ "( " ++ (show e) ++ ")"
+    show (EApp x e) = x ++ "("++ (show e) ++ ")"
 
 value :: Exp -> Bool
 value (EInt _)        = True
