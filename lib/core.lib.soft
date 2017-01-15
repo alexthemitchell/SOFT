@@ -34,6 +34,16 @@ function singleton(list) {
   equal(rest(list),[])
 }
 
+
+# [[a]] -> [a]
+function flatten(list) {
+  if (empty(list)) {
+    []
+  } else {
+    first(list) + flatten(rest(list))
+  }
+}
+
 #function Maximum(list) {
 #  if (singleton(list)) {
 #   first(list) 
