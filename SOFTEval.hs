@@ -224,7 +224,7 @@ step d pb e (EApp s lv) =
   case find s e of
    (EFunc f lp e1) ->
      let (ex, b) = eApply d [] lp lv e1 e in
-     (ex, e, if d then b++(show (EApp s lv)):pb else pb)
+     (ex, e, if d then b++(show (EApp s lv)):pb else b++pb)
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
 --call for variable declaration
 step d pb e (ELet s v)
@@ -247,11 +247,18 @@ step d pb e (EFunc s l e1)
 
 eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
 eApply d pb s v exp env
-  | value exp         = (exp, pb)
+  | value exp         = (exp, if d then (show exp) : pb else pb)
   | otherwise         =
-    let vals = map (\val -> fst' $ evaluate d env val pb ) v in
-      let (ex, en, b)   = step d pb ((zip s vals)++env) exp in
-                          eApply d b s vals ex en
+  let (vals,buff)     = mEval  d v [] [] env in
+  --let vals = map (\val -> fst' $ evaluate d env val pb ) v in --no print buffer from the evaluate call
+    let (ex, en, b)   = step d [] ((zip s vals)++env) exp in
+                          eApply d (b++buff++pb) s vals ex en
+
+--maps evaluate onto list of expressions
+mEval :: Bool -> [Exp] -> [Exp] -> Buffer -> Env -> ([Exp],Buffer)
+mEval _ [] sofar sofarBuff  _    = (sofar,sofarBuff)
+mEval d (x:xs) sofar sofarBuff e  = let (ex,_,b) = evaluate d e x [] in
+                                         mEval d xs (ex:sofar) (sofarBuff ++ b) e
 
 existsIn :: String -> Env -> Bool
 existsIn _ []   = False
@@ -278,7 +285,6 @@ snd' (x, y, z) = y
 
 thd :: (a, b, c) -> c
 thd (x, y, z) = z
-
 
 evaluate :: Bool -> Env -> Exp -> Buffer  -> (Exp, Env, Buffer)
 evaluate d env exp pb
