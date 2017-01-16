@@ -4,7 +4,7 @@ import SOFTLexer
 import SOFTEval
 import System.IO
 import System.Environment
-
+import System.Directory
 --{
 --REPL code adapted from:
 --https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours/Building_a_REPL
@@ -109,6 +109,30 @@ matchDelim (x:xs) open close stck (before,_)
   | x == open  = matchDelim xs open close (stck+1) (x:before,"")
   | x == close = matchDelim xs open close (stck-1) (x:before,"")
   | otherwise  = matchDelim xs open close  stck    (x:before,"")
+
+--changes import syntax into literal path name. ("core.blah" -> core/blah.soft)
+toPathName :: String -> String
+toPathName s = let repl '.' = '/'
+                   repl c   = c in
+                   (map repl s) ++ ".soft"
+
+--returns the first path that exists, if none exists then empty string
+pathThatExists :: [String] -> String -> IO String
+pathThatExists [] _     = return []
+pathThatExists (x:xs) given = do
+                                let checking = x ++ given
+                                b <- doesFileExist checking
+                                if b then return checking
+                                else pathThatExists xs given
+
+getPathName :: String -> IO String
+getPathName s = do
+                 p <- readFile("paths.txt")
+                 let givenPath = toPathName s
+                 let defaultPaths = lines $ stripComments p
+                 pathThatExists defaultPaths givenPath
+
+
 
 --return: ([paths for import],file contents after import)
 findPaths :: String -> ([String],String) -> ([String],String)
