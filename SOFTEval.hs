@@ -226,10 +226,11 @@ step d pb e (EIf b e1 e2)
 --Applies defined function
 step d pb e (EApp s lv) =
   case find s e of
-   (EFunc f lp e1) ->
-     let (ex, b) = eApply d [] lp lv e1 e in
-     (ex, e, if d then b++(show (EApp s lv)):pb else b++pb)
+   (EFunc f lp e1) -> let (vals,buff) = mEval d lv [] [] e in
+                        let fenv = (zip lp vals) ++ e in 
+                          evaluate d fenv e1 (buff++(if d then (show (EApp s lv)):pb else pb))
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
+
 --call for variable declaration
 step d pb e (ELet s v)
   | existsIn s e   = (v, findAndReplace s v e, if d then (s ++ " declared as " ++ (show v)):pb else pb)
@@ -248,15 +249,6 @@ step d pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
   | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb)
   | otherwise = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), (s, (EFunc s l e1)):e, pb)
-
-eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
-eApply d pb s v exp env
-  | value exp         = (exp, if d then (show exp) : pb else pb)
-  | otherwise         =
-  let (vals,buff)     = mEval  d v [] [] env in
-  --let vals = map (\val -> fst' $ evaluate d env val pb ) v in --no print buffer from the evaluate call
-    let (ex, en, b)   = step d [] ((zip s vals)++env) exp in
-                          eApply d (b++buff++pb) s vals ex en
 
 --maps evaluate onto list of expressions
 mEval :: Bool -> [Exp] -> [Exp] -> Buffer -> Env -> ([Exp],Buffer)

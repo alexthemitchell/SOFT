@@ -1,0 +1,44 @@
+function Sum(list) {
+  if (empty(list)) {
+    0
+  } else {
+    first(list) + Sum(rest(list))
+  }
+}
+
+function Length(list) {
+  if (empty(list)) {
+    0
+  } else {
+    1 + Length(rest(list))
+  }
+}
+
+function equal(list1,list2) {
+  if ((empty(list1) or empty(list2))) {
+    (empty(list1) and empty(list2))
+  } else {
+    ((first(list1) == first(list2)) and equal(rest(list1),rest(list2)))
+  }
+}
+
+function singleton(list) {
+  equal(rest(list),[])
+}
+
+
+# [[a]] -> [a]
+function flatten(list) {
+  if (empty(list)) {
+    []
+  } else {
+    first(list) + flatten(rest(list))
+  }
+}
+
+#function Maximum(list) {
+#  if (singleton(list)) {
+#   first(list) 
+#  } else {
+#    max(first(list), Maximum(rest(list)))
+#  }
