@@ -118,19 +118,24 @@ toPathName s = let repl '.' = '/'
 
 --returns the first path that exists, if none exists then empty string
 pathThatExists :: [String] -> String -> IO String
-pathThatExists [] _     = return []
+pathThatExists [] _         = return []
+pathThatExists ("":xs) s    = pathThatExists xs s
 pathThatExists (x:xs) given = do
                                 let checking = x ++ given
                                 b <- doesFileExist checking
                                 if b then return checking
                                 else pathThatExists xs given
 
+--returns the path of a file that should be imported
 getPathName :: String -> IO String
 getPathName s = do
-                 p <- readFile("paths.txt")
-                 let givenPath = toPathName s
-                 let defaultPaths = lines $ stripComments p
-                 pathThatExists defaultPaths givenPath
+                 b <- doesFileExist s
+                 if b then return s
+                 else do
+                        p <- readFile("paths.txt")
+                        let givenPath = toPathName s
+                        let defaultPaths = lines $ stripComments p
+                        pathThatExists defaultPaths givenPath
 
 
 
@@ -145,7 +150,9 @@ findPaths rest (paths,_)                            = findPaths [] (paths,rest)
 --takes list of path names, reads in each file, checks for more imports, concats files
 foldCode :: [String] -> String -> IO String
 foldCode [] sofar     = return sofar
-foldCode (x:xs) sofar = do code <- readFile x
+foldCode (x:xs) sofar = do
+                           fileName <- getPathName x
+                           code <- readFile fileName
                            let (paths,rest) = findPaths code ([],[])
                            if paths == [] then foldCode xs (sofar ++ rest)
                            else foldCode (paths ++ xs)     (sofar ++ rest)
