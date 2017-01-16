@@ -1,0 +1,4 @@
+#used to specify directories where soft code can be imported from
+#example of a configuration below:
+#/home/nicolas/code/haskell/SOFT/lib
+#/home/nicolas/code/haskell/SOFT/test
