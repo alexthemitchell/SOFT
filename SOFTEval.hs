@@ -9,9 +9,11 @@ import Data.IORef
 -- The exception Monad below is taken from:
 -- https://www.haskell.org/happy/doc/html/sec-monads.html#sec-exception
 
-parseError :: [Token] -> E a
-parseError tokens = failE "Parse error"
+parseError :: Token -> P a
+parseError = getLineNo `thenP` \line ->
+             failP (show line ++ ": parse error")
 
+{--
 data E a = Ok a | Failed String
 
 instance (Show a) => Show (E a) where
@@ -33,6 +35,7 @@ catchE :: E a -> (String -> E a) -> E a
 catchE m k =
   case m of Ok a -> Ok a
             Failed e -> k e
+--}
 
 data Bop =
   BAdd | BSub | BMul | BDiv | BMod |

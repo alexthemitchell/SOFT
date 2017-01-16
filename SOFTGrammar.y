@@ -8,7 +8,8 @@ import SOFTLexer
 import SOFTEval
 }
 
-%monad { E } { thenE } { returnE }
+%monad { P } { thenP } { returnP }
+%lexer { lexer } { TokenEOF }
 
 %name parse
 %tokentype { SOFTLexer.Token }
