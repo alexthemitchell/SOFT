@@ -108,7 +108,7 @@ instance Show Exp where
     show (ERst l)     = "rest(" ++ show l ++ ")"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty(" ++ (show l) ++ ")"
-    show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
+    show (EIf b e1 e2) = "if (" ++ (show b) ++ "){" ++ (show e1) ++ "} else {" ++ (show e2) ++ "}"
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
     show (EApp x e) = x ++ "("++ (show e) ++ ")"
 
@@ -238,8 +238,8 @@ step (db,dp) pb e (EApp s lv) =
   case find s e of
    (EFunc f lp e1) -> let (vals,buff) = mEval (db,dp) lv [] [] e in
                         let fenv = (zip lp vals) ++ e in 
-                          let (xp, env, buffer) = evaluate (db,dp+1) fenv e1 pb in
-                            (xp, env, buffer ++ buff ++ pb)
+                          let (xp, env, buffer) = evaluate (db,dp+1) fenv e1 [] in
+                            (xp, env, buffer ++ buff ++ debugify pb (db,dp) (EApp s lv))
                           --evaluate d fenv e1 (if d then (buff++f:pb) else pb)
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
 
