@@ -14,14 +14,6 @@ function Length(list) {
   }
 }
 
-function max(a,b) {
-  if ((a > b)) {
-    a
-  } else {
-    b
-  }
-}
-
 function equal(list1,list2) {
   if ((empty(list1) or empty(list2))) {
     (empty(list1) and empty(list2))

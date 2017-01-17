@@ -9,9 +9,11 @@ import Data.IORef
 -- The exception Monad below is taken from:
 -- https://www.haskell.org/happy/doc/html/sec-monads.html#sec-exception
 
-parseError :: [Token] -> E a
-parseError tokens = failE "Parse error"
+parseError :: Token -> P a
+parseError = getLineNo `thenP` \line ->
+             failP (show line ++ ": parse error") -- erroring here, likely problem with thenP
 
+{--
 data E a = Ok a | Failed String
 
 instance (Show a) => Show (E a) where
@@ -33,6 +35,7 @@ catchE :: E a -> (String -> E a) -> E a
 catchE m k =
   case m of Ok a -> Ok a
             Failed e -> k e
+--}
 
 data Bop =
   BAdd | BSub | BMul | BDiv | BMod |
@@ -63,7 +66,7 @@ data Exp where
   EPar  :: String -> Exp
   EFunc :: String -> [String] ->  Exp -> Exp -- let f(x1, ..., xn) = e1
   --General Operations
-  EApp  :: String -> [Exp] -> Exp --Applies given function to expressio
+  EApp  :: String -> [Exp] -> Exp --Applies given function to expression
   EPrint:: Exp -> Exp
   EIf   :: Exp -> Exp -> Exp -> Exp
   EClos :: Exp -> Exp --For parenthesis, brackets etc.
@@ -99,15 +102,15 @@ instance Show Exp where
       BGeq -> "(" ++ (show e1) ++ " >= "  ++ (show e2) ++ ")"
       BAnd -> "(" ++ (show e1) ++ " and " ++ (show e2) ++ ")"
       BOr  -> "(" ++ (show e1) ++ " or "  ++ (show e2) ++ ")"
-    show (ENot e)     = "not " ++ (show e)
-    show (EFst l)     = "first " ++ (show l)
+    show (ENot e)     = "not(" ++ (show e) ++ ")"
+    show (EFst l)     = "first(" ++ (show l) ++ ")"
     show ENil         = ""
-    show (ERst l)     = show l
+    show (ERst l)     = "rest(" ++ show l ++ ")"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
-    show (EEmt l)     = "empty " ++ (show l)
+    show (EEmt l)     = "empty(" ++ (show l) ++ ")"
     show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
-    show (EApp x e) = x ++ "( " ++ (show e) ++ ")"
+    show (EApp x e) = x ++ "("++ (show e) ++ ")"
 
 value :: Exp -> Bool
 value (EInt _)        = True
@@ -140,6 +143,7 @@ step d pb e (EBinop e1 op e2)
        (EInt n1, BAdd, EFlt f2) -> (EFlt  $ (fromIntegral n1) + f2, e, (if d then ((show n1) ++ "+" ++ (show f2)):pb else pb))
        (EFlt f1, BAdd, EInt n2) -> (EFlt  $ f1 + (fromIntegral n2),e, (if d then ((show f1) ++ "+" ++ (show n2)):pb else pb))
        (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2,e, (if d then ((show f1) ++ "+" ++ (show f2)):pb else pb))
+       (ELst l1, BAdd, ELst l2) -> (ELst  $ l1 ++ l2,e, (if d then ((show l1) ++ "+" ++ (show l2)):pb else pb))
        ( _     , BAdd, _      ) -> (EErr  $ "+ takes ints or floats",e,pb)
        (EInt n1, BSub, EInt n2) -> (EInt  $ n1 - n2, e, (if d then ((show n1) ++ "-" ++ (show n2)):pb else pb))
        (EFlt f1, BSub, EInt n2) -> (EFlt  $ f1 - (fromIntegral n2),e, (if d then ((show f1) ++ "-" ++ (show n2)):pb else pb))
@@ -222,10 +226,11 @@ step d pb e (EIf b e1 e2)
 --Applies defined function
 step d pb e (EApp s lv) =
   case find s e of
-   (EFunc f lp e1) -> do
-     let (ex, b) = eApply d [] lp lv e1 e
-     (ex, e, if d then b++(show (EApp s lv)):pb else pb)
+   (EFunc f lp e1) -> let (vals,buff) = mEval d lv [] [] e in
+                        let fenv = (zip lp vals) ++ e in 
+                          evaluate d fenv e1 (buff++(if d then (show (EApp s lv)):pb else pb))
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
+
 --call for variable declaration
 step d pb e (ELet s v)
   | existsIn s e   = (v, findAndReplace s v e, if d then (s ++ " declared as " ++ (show v)):pb else pb)
@@ -245,15 +250,11 @@ step d pb e (EFunc s l e1)
   | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb)
   | otherwise = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), (s, (EFunc s l e1)):e, pb)
 
-eApply :: Bool -> Buffer -> [String] -> [Exp] -> Exp -> Env -> (Exp, Buffer)
-eApply d pb s v exp env
-  | not $ all value v = do
-    let (ex, en, b) = step d pb env exp
-    eApply d b s (map (\x -> if not $ value x then ex else x) v) exp env
-  | value exp         = (exp, pb)
-  | otherwise         = do
-    let (ex, en, b) = step d pb ((zip s v)++env) exp
-    eApply d b s v ex env
+--maps evaluate onto list of expressions
+mEval :: Bool -> [Exp] -> [Exp] -> Buffer -> Env -> ([Exp],Buffer)
+mEval _ [] sofar sofarBuff  _    = (sofar,sofarBuff)
+mEval d (x:xs) sofar sofarBuff e  = let (ex,_,b) = evaluate d e x [] in
+                                         mEval d xs (ex:sofar) (sofarBuff ++ b) e
 
 existsIn :: String -> Env -> Bool
 existsIn _ []   = False
@@ -280,7 +281,6 @@ snd' (x, y, z) = y
 
 thd :: (a, b, c) -> c
 thd (x, y, z) = z
-
 
 evaluate :: Bool -> Env -> Exp -> Buffer  -> (Exp, Env, Buffer)
 evaluate d env exp pb

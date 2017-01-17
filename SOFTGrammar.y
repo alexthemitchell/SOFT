@@ -8,7 +8,7 @@ import SOFTLexer
 import SOFTEval
 }
 
-%monad { E } { thenE } { returnE }
+%monad { P } { thenP } { returnP }
 %lexer { lexer } { TokenEOF }
 
 %name parse
@@ -61,20 +61,21 @@ import SOFTEval
 %%
 
 Exp     : let var '=' Closure                         { ELet $2 $4 }
-        | function var '(' Parameters ')' '{' Closure '}' { EFunc $2 (reverse $4) $7} 
+        | function var '(' Parameters ')' '{' Closure '}' { EFunc $2 (reverse $4) $7}
         | print Closure                                   {EPrint $2}
         | Closure                                     { $1 }
-        
+
 Closure : '(' Closure ')'       { $2 }
-        | List                  { $1 } 
+        | List                  { $1 }
         | var                   { EVar $1 }
         | if '(' Bool ')' '{' Exp '}' else '{' Exp '}' { EIf $3 $6 $10 }
         | Value                 {$1 }
 
 List : '[' ListLiteral ']' { ELst $ reverse $2 } -- (2 of 2) ... so we must reverse the input here.
-     | Closure ':' List    { ECons $1 $3 }
-     | var                {EVar $1 }
-     | rest '(' List ')'         { ERst $3 }
+     | Closure ':' List   { ECons $1 $3 }
+     | var                { EVar $1 }
+     | rest '(' List ')'  { ERst $3 }
+     | rest '(' var ')'   { ERst $ EVar $3 }
 
 ListLiteral : ListLiteral ',' Closure    { $3 : $1 } -- (1 of 2) We use left recursion for stack overflow reasons... ^^
             | Closure                    { [$1] }
@@ -107,13 +108,14 @@ Value   : '-' int           { EInt $ negate $2 }
 
 Bool    : true              { EBool True }
         | false             { EBool False }
+        | var               { EVar $1}
         | 'not' '(' Bool ')'{ ENot $3 }
-        | '(' Bool 'and' Bool ')'   { EBinop $2 BAnd $4 }
-        | '(' Bool 'or' Bool ')'    { EBinop $2 BOr $4 }
+        | '(' Closure 'and' Closure ')'   { EBinop $2 BAnd $4 }
+        | '(' Closure 'or' Closure ')'    { EBinop $2 BOr $4 }
         | '('Closure '==' Closure  ')' { EBinop $2 BEql $4 }
         | '('Closure '<' Closure ')'     { EBinop $2 BLtn $4 }
         | '('Closure '>' Closure ')' { EBinop $2 BGtn $4 }
         | '('Closure '>=' Closure ')' { EBinop $2 BGeq $4 }
         | '('Closure '<=' Closure ')' { EBinop $2 BLeq $4 }
         | empty '(' List ')'        { EEmt $3 }
-        | empty '(' var ')'        { EEmt $ EVar $3} 
+        | empty '(' var ')'        { EEmt $ EVar $3}

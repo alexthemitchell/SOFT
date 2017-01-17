@@ -1,6 +1,7 @@
 module SOFTLexer where
 import Data.Char
 
+-- Error Monad
 data ParseResult a = Ok a | Failed String
 type LineNumber = Int
 type P a = String -> LineNumber -> ParseResult a
@@ -9,22 +10,22 @@ getLineNo :: P LineNumber
 getLineNo = \s l -> Ok l
 
 thenP :: P a -> (a -> P b) -> P b
-m `thenP` k = \s ->
-  case m s of 
-    Ok a -> k a s
+m `thenP` k = \s l ->
+  case m s l of
+    Ok a -> k a s l
     Failed e -> Failed e
 
 returnP :: a -> P a
-returnP a = \s -> Ok a
+returnP a = \s l -> Ok a
 
 failP :: String -> P a
-failP err = \s -> Failed err
+failP err = \s l -> Failed err
 
 catchP :: P a -> (String -> P a) -> P a
-catchP m k = \s ->
-  case m s of
+catchP m k = \s l ->
+  case m s l of
     Ok a -> Ok a
-    Failed e -> k e s
+    Failed e -> k e s l
 
 -- Token types --
 data Token
@@ -75,37 +76,52 @@ data Token
 isNumSymbol :: Char -> Bool
 isNumSymbol c = isDigit c || c == '.'
 
--- Returns need to be changed, leaving broken for now.
 -- Lexer --
+-- current implementation contains type errors, don't properly make recursive call.
 lexer :: (Token -> P a) -> P a
-lexer cont s = 
-  case s of 
-    []                 -> []
-    ('\n':cs)          -> lexer cs
-    ('"':cs)           -> lexStr cs
-    (c:cs)
-       | isSpace c     -> lexer cs
-       | isAlpha c     -> lexVar (c:cs)
-       | isNumSymbol c -> lexNum (c:cs)
-    ('+':cs)           -> TokenPlus : lexer cs
-    ('-':cs)           -> TokenMinus : lexer cs
-    ('*':cs)           -> TokenAsterisk : lexer cs
-    ('/':cs)           -> TokenFSlash : lexer cs
-    ('\'':x:'\'':cs)   -> TokenChar x : lexer cs
-    ('(':cs)           -> TokenLParen : lexer cs
-    (')':cs)           -> TokenRParen : lexer cs
-    ('{':cs)           -> TokenLBrace : lexer cs
-    ('}':cs)           -> TokenRBrace : lexer cs
-    ('[':cs)           -> TokenLSqBrkt : lexer cs
-    (']':cs)           -> TokenRSqBrkt : lexer cs
-    (':':cs)           -> TokenCons : lexer cs
-    ('<':'=':cs)       -> TokenLEQ : lexer cs
-    ('>':'=':cs)       -> TokenGEQ : lexer cs
-    ('=':'=':cs)       -> TokenDoubleEqual : lexer cs
-    ('<':cs)           -> TokenLT : lexer cs
-    ('>':cs)           -> TokenGT : lexer cs
-    ('=':cs)           -> TokenEqual : lexer cs
-    (',':cs)           -> TokenComma : lexer cs
+lexer cont s =
+  case s of
+    []     -> \line -> cont TokenEOF [] line
+    '\n':cs -> \line -> lexer cont cs (line + 1)
+    --'"':cs -> lexer won't work yet bc of lexStr
+    '+':cs -> \line -> cont TokenPlus cs line
+    '-':cs -> \line -> cont TokenMinus cs line
+    {--
+    '+':cs -> \line -> lexer cont TokenPlus cs line
+    '+':cs -> \line -> lexer cont TokenPlus cs line
+    '+':cs -> \line -> lexer cont TokenPlus cs line
+    '+':cs -> \line -> lexer cont TokenPlus cs line
+--}
+
+{--
+-- everything in here will need to be revised
+lexer []               = []
+lexer ('\n':cs)        = lexer cs
+lexer ('"':cs)         = lexStr cs
+lexer (c:cs)
+      | isSpace c      = lexer cs
+      | isAlpha c      = lexVar (c:cs)
+      | isNumSymbol c  = lexNum (c:cs)
+lexer ('+':cs)         = TokenPlus : lexer cs
+lexer ('-':cs)         = TokenMinus : lexer cs
+lexer ('*':cs)         = TokenAsterisk : lexer cs
+lexer ('/':cs)         = TokenFSlash : lexer cs
+lexer ('\'':x:'\'':cs) = TokenChar x : lexer cs
+lexer ('(':cs)         = TokenLParen : lexer cs
+lexer (')':cs)         = TokenRParen : lexer cs
+lexer ('{':cs)         = TokenLBrace : lexer cs
+lexer ('}':cs)         = TokenRBrace : lexer cs
+lexer ('[':cs)         = TokenLSqBrkt : lexer cs
+lexer (']':cs)         = TokenRSqBrkt : lexer cs
+lexer (':':cs)         = TokenCons : lexer cs
+lexer ('<':'=':cs)     = TokenLEQ : lexer cs
+lexer ('>':'=':cs)     = TokenGEQ : lexer cs
+lexer ('=':'=':cs)     = TokenDoubleEqual : lexer cs
+lexer ('<':cs)         = TokenLT : lexer cs
+lexer ('>':cs)         = TokenGT : lexer cs
+lexer ('=':cs)         = TokenEqual : lexer cs
+lexer (',':cs)         = TokenComma : lexer cs
+>>>>>>> df5d9ab28e75125c81394483fc3b12e661eedd98
 
 lexStr cs = TokenStr str : if length rest /= 0 then lexer (tail rest) else lexer rest
   where (str, rest) = span (\x -> x /= '"') cs
@@ -137,3 +153,4 @@ lexVar cs =
       ("print", rest) -> TokenPrint       : lexer rest
       ("EOF", rest)   -> TokenEOF         : lexer rest
       (var,rest)      -> TokenVar var     : lexer rest
+--}

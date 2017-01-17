@@ -1,0 +1,9 @@
+import lists.soft
+import utils.soft
+
+#function Maximum(list) {
+#  if (singleton(list)) {
+#   first(list) 
+#  } else {
+#    max(first(list), Maximum(rest(list)))
+#  }
