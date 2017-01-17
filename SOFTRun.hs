@@ -25,7 +25,7 @@ until_ env pred prompt = do
       let monad = parse.lexer $ stripComments $ input
       case monad of
         (Ok m) -> do
-          let (ex,en,pb) = evaluate True env m []
+          let (ex,en,pb) = evaluate (True,0) env m []
           printAll (reverse pb)
           putStrLn $ show ex
           until_ en pred prompt
@@ -42,7 +42,7 @@ until_ env pred prompt = do
           let monad = parse . lexer $ result
           case monad of
             (Ok m) -> do
-              let (ex, en, pb) = evaluate False env m []
+              let (ex, en, pb) = evaluate (False,0) env m []
               printAll pb
               putStrLn (show ex)
               until_ en pred prompt
@@ -69,11 +69,10 @@ mergeEnv :: Env -> Env -> Env
 mergeEnv [] orig = orig
 mergeEnv (x:xs) orig = mergeEnv xs (addToAL orig (fst x) (snd x))
 
-
 printAll :: [String] -> IO ()
 printAll [] =  putStr ""
 printAll (x:xs) = do
-  putStrLn $ show x
+  putStrLn x
   printAll xs
 
 stripComments :: String -> String
@@ -195,14 +194,14 @@ runCodeKernel e [x] =
   let monad = parse x in
   case monad of
     (Ok m) ->
-      let (_, _, pb) = evaluate False e m [] in
+      let (_, _, pb) = evaluate (False,0) e m [] in
       printAll pb
     (Failed s) -> putStrLn $ show $ EErr s
 runCodeKernel e (x:xs) =
   let monad = parse x in
   case monad of
     (Ok m) -> do
-      let (_,env,pb) = evaluate False e m []
+      let (_,env,pb) = evaluate (False,0) e m []
       printAll pb
       runCodeKernel env xs
     (Failed s) -> putStrLn $ show $  EErr s
@@ -218,13 +217,13 @@ runCodeKernel' e [x] =
   let monad = parse x in
   case monad of
     (Ok m) ->
-       snd' $ evaluate False e m []
+       snd' $ evaluate (False,0) e m []
     (Failed s) -> []
 runCodeKernel' e (x:xs) =
   let monad = parse x in
   case monad of
     (Ok m) -> do
-      let (_,env,_) = evaluate False e m [] in
+      let (_,env,_) = evaluate (False,0) e m [] in
         runCodeKernel' env xs
     (Failed s) -> []
 

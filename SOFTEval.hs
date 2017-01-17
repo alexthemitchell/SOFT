@@ -74,6 +74,9 @@ data Exp where
 type Env = [(String, Exp)]
 type EnvStack = [Env]
 
+-- Debug to print buffer, depth
+type DebugEnv = (Bool, Int)
+
 instance Show Exp where
     show (EInt n)  = show n
     show (EFlt f)  = show f
@@ -108,7 +111,7 @@ instance Show Exp where
     show (ERst l)     = "rest(" ++ show l ++ ")"
     show (ECons v l) = (show v) ++ ":" ++ (show l)
     show (EEmt l)     = "empty(" ++ (show l) ++ ")"
-    show (EIf b e1 e2) = "if " ++ (show b) ++ " then " ++ (show e1) ++ " else " ++ (show e2)
+    show (EIf b e1 e2) = "if (" ++ (show b) ++ "){" ++ (show e1) ++ "} else {" ++ (show e2) ++ "}"
     show (EFunc s p e)    = "Function " ++ show s ++ show p ++" = "++ show e
     show (EApp x e) = x ++ "("++ (show e) ++ ")"
 
@@ -125,136 +128,149 @@ value _           = False
 
 type Buffer = [String]
 
-step :: Bool-> Buffer -> Env ->  Exp -> (Exp, Env, Buffer)
-step d pb e (EInt  n) = (EInt n, e, if d then (show n):pb else pb)
-step d pb e (EFlt  f) = (EFlt f, e, if d then (show f):pb else pb)
-step d pb e (EBool b) = (EBool b, e, if d then (show b):pb else pb)
-step d pb e (EChar c) = (EChar c, e, if d then (show c):pb else pb)
-step d pb e (EStr  s) = (EStr s, e, if d then (show s):pb else pb)
-step d pb e (ELst  l) = (ELst l, e, if d then (show l):pb else pb)
-step d pb v (EErr  e) = (EErr e, v, if d then (show e):pb else pb)
-step d pb e (EVar  s) = (find s e, e, if d then s:pb else pb) --returns value associated with variable
-step d pb e (EBinop e1 op e2)
-  | not $ value e1 = (EBinop (fst' $ step d pb e e1) op e2, e, if d then (show (EBinop e1 op e2)):pb else pb )
-  | not $ value e2 = (EBinop e1 op (fst' $ step d pb e e2), e, if d then (show (EBinop e1 op e2)):pb else pb )
+step :: DebugEnv -> Buffer -> Env ->  Exp -> (Exp, Env, Buffer)
+step (db,dp) pb e (EInt  n) = (EInt n, e, debugify pb (db,dp) (EInt n))
+step (db,dp) pb e (EFlt  f) = (EFlt f, e, debugify pb (db,dp) (EFlt f))
+step (db,dp) pb e (EBool b) = (EBool b, e, debugify pb (db,dp) (EBool b))
+step (db,dp) pb e (EChar c) = (EChar c, e, debugify pb (db,dp) (EChar c))
+step (db,dp) pb e (EStr  s) = (EStr s, e, debugify pb (db,dp) (EStr s))
+step (db,dp) pb e (ELst  l) = (ELst l, e, debugify pb (db,dp) (ELst l))
+step (db,dp) pb v (EErr  e) = (EErr e, v, debugify pb (db,dp) (EErr e))
+step (db,dp) pb e (EVar  s) = (find s e, e, debugify pb (db,dp) (EVar s))
+step (db,dp) pb e (EBinop e1 op e2)
+  | not $ value e1 = let (ex,en,bf) = evaluate (db,dp+1) e e1 [] in 
+    (EBinop ex op e2, e, bf ++ debugify pb (db,dp) (EBinop e1 op e2))
+  | not $ value e2 = let (ex,en,bf) = evaluate (db,dp+1) e e2 [] in
+    (EBinop e1 op ex, e, bf ++ debugify pb (db,dp) (EBinop e1 op e2))
   | otherwise      =
      case (e1, op ,e2) of
-       (EInt n1, BAdd, EInt n2) -> (EInt  $ n1 + n2, e, (if d then ((show n1) ++ "+" ++ (show n2)):pb else pb))
-       (EInt n1, BAdd, EFlt f2) -> (EFlt  $ (fromIntegral n1) + f2, e, (if d then ((show n1) ++ "+" ++ (show f2)):pb else pb))
-       (EFlt f1, BAdd, EInt n2) -> (EFlt  $ f1 + (fromIntegral n2),e, (if d then ((show f1) ++ "+" ++ (show n2)):pb else pb))
-       (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2,e, (if d then ((show f1) ++ "+" ++ (show f2)):pb else pb))
-       (ELst l1, BAdd, ELst l2) -> (ELst  $ l1 ++ l2,e, (if d then ((show l1) ++ "+" ++ (show l2)):pb else pb))
+       (EInt n1, BAdd, EInt n2) -> (EInt  $ n1 + n2, e, debugify pb (db,dp) (EBinop e1 op e2) )
+       (EInt n1, BAdd, EFlt f2) -> (EFlt  $ (fromIntegral n1) + f2, e, debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BAdd, EInt n2) -> (EFlt  $ f1 + (fromIntegral n2),e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BAdd, EFlt f2) -> (EFlt  $ f1 + f2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (ELst l1, BAdd, ELst l2) -> (ELst  $ l1 ++ l2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BAdd, _      ) -> (EErr  $ "+ takes ints or floats",e,pb)
-       (EInt n1, BSub, EInt n2) -> (EInt  $ n1 - n2, e, (if d then ((show n1) ++ "-" ++ (show n2)):pb else pb))
-       (EFlt f1, BSub, EInt n2) -> (EFlt  $ f1 - (fromIntegral n2),e, (if d then ((show f1) ++ "-" ++ (show n2)):pb else pb))
-       (EInt n1, BSub, EFlt f2) -> (EFlt  $ (fromIntegral n1) - f2,e, (if d then ((show n1) ++ "-" ++ (show f2)):pb else pb))
-       (EFlt f1, BSub, EFlt f2) -> (EFlt  $ f1 - f2,e, (if d then ((show f1) ++ "-" ++ (show f2)):pb else pb))
+       (EInt n1, BSub, EInt n2) -> (EInt  $ n1 - n2, e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BSub, EInt n2) -> (EFlt  $ f1 - (fromIntegral n2),e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EInt n1, BSub, EFlt f2) -> (EFlt  $ (fromIntegral n1) - f2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BSub, EFlt f2) -> (EFlt  $ f1 - f2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BSub, _      ) -> (EErr  $ "- takes ints or floats",e, pb)
-       (EInt n1, BMul, EInt n2) -> (EInt  $ n1 * n2,e, (if d then ((show n1) ++ "*" ++ (show n2)):pb else pb))
-       (EFlt f1, BMul, EInt n2) -> (EFlt  $ f1 * (fromIntegral n2),e, (if d then ((show f1) ++ "*" ++ (show n2)):pb else pb))
-       (EInt n1, BMul, EFlt f2) -> (EFlt  $ (fromIntegral n1) * f2,e, (if d then ((show n1) ++ "*" ++ (show f2)):pb else pb))
-       (EFlt f1, BMul, EFlt f2) -> (EFlt  $ f1 * f2,e, (if d then ((show f1) ++ "*" ++ (show f2)):pb else pb))
+       (EInt n1, BMul, EInt n2) -> (EInt  $ n1 * n2,e,debugify pb (db,dp) (EBinop e1 op e2))
+
+       (EFlt f1, BMul, EInt n2) -> (EFlt  $ f1 * (fromIntegral n2),e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EInt n1, BMul, EFlt f2) -> (EFlt  $ (fromIntegral n1) * f2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BMul, EFlt f2) -> (EFlt  $ f1 * f2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BMul, _      ) -> (EErr  $ "* takes ints or floats",e, pb)
-       (EInt n1, BDiv, EInt n2) -> (EInt  $ n1 `div` n2,e, (if d then ((show n1) ++ "/" ++ (show n2)):pb else pb))
-       (EFlt f1, BDiv, EFlt f2) -> (EFlt  $ f1 / f2,e, (if d then ((show f1) ++ "/" ++ (show f2)):pb else pb))
-       (EInt n1, BDiv, EFlt f2) -> (EFlt  $ (fromIntegral n1) / f2,e, (if d then ((show n1) ++ "/" ++ (show f2)):pb else pb))
-       (EFlt f1, BDiv, EInt n2) -> (EFlt  $ f1 / (fromIntegral n2),e, (if d then ((show f1) ++ "/" ++ (show n2)):pb else pb))
+       (EInt n1, BDiv, EInt n2) -> (EInt  $ n1 `div` n2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BDiv, EFlt f2) -> (EFlt  $ f1 / f2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EInt n1, BDiv, EFlt f2) -> (EFlt  $ (fromIntegral n1) / f2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BDiv, EInt n2) -> (EFlt  $ f1 / (fromIntegral n2),e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BDiv, _      ) -> (EErr  $ "/ takes ints or floats",e,pb)
-       (EInt n1, BMod, EInt n2) -> (EInt  $ n1 `mod` n2,e, (if d then ((show n1) ++ "mod" ++ (show n2)):pb else pb))
+       (EInt n1, BMod, EInt n2) -> (EInt  $ n1 `mod` n2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BMod, _      ) -> (EErr  $ "mod takes int, int",e,pb)
-       (EInt n1, BEql, EInt n2) -> (EBool $ n1 == n2,e, (if d then ((show n1) ++ "==" ++ (show n2)):pb else pb))
-       (EFlt f1, BEql, EFlt f2) -> (EBool  $ f1 == f2,e, (if d then ((show f1) ++ "==" ++ (show f2)):pb else pb))
-       (EBool b1, BEql, EBool b2) -> (EBool $ b1 == b2,e, (if d then ((show b1) ++ "==" ++ (show b2)):pb else pb))
-       (EStr s1, BEql, EStr s2)   -> (EBool  $ s1 == s2,e, (if d then ((show s1) ++ "==" ++ (show s2)):pb else pb))
-       (EChar c1, BEql, EChar c2) -> (EBool $ c1 == c2,e, (if d then ((show c1) ++ "==" ++ (show c2)):pb else pb))
+       (EInt n1, BEql, EInt n2) -> (EBool $ n1 == n2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EFlt f1, BEql, EFlt f2) -> (EBool  $ f1 == f2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EBool b1, BEql, EBool b2) -> (EBool $ b1 == b2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EStr s1, BEql, EStr s2)   -> (EBool  $ s1 == s2,e,debugify pb (db,dp) (EBinop e1 op e2))
+       (EChar c1, BEql, EChar c2) -> (EBool $ c1 == c2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BEql, _      ) -> (EErr  $ "== takes two of the same type",e,pb)
-       (EInt n1, BLtn, EInt n2) -> (EBool $ n1 < n2,e, (if d then ((show n1) ++ "<" ++ (show n2)):pb else pb))
+       (EInt n1, BLtn, EInt n2) -> (EBool $ n1 < n2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BLtn, _      ) -> (EErr  $ "< takes int, int",e,pb)
-       (EInt n1, BGtn, EInt n2) -> (EBool $ n1 > n2,e, (if d then ((show n1) ++ ">" ++ (show n2)):pb else pb))
+       (EInt n1, BGtn, EInt n2) -> (EBool $ n1 > n2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BGtn, _      ) -> (EErr  $ "> takes int, int",e,pb)
-       (EInt n1, BLeq, EInt n2) -> (EBool $ n1 <= n2,e, (if d then ((show n1) ++ "≤" ++ (show n2)):pb else pb))
+       (EInt n1, BLeq, EInt n2) -> (EBool $ n1 <= n2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BLeq, _      ) -> (EErr  $ "<= takes int, int",e,pb)
-       (EInt n1, BGeq, EInt n2) -> (EBool $ n1 >= n2,e, (if d then ((show n1) ++ "≥" ++ (show n2)):pb else pb))
+       (EInt n1, BGeq, EInt n2) -> (EBool $ n1 >= n2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _     , BGeq, _      ) -> (EErr  $ ">= takes int, int",e,pb)
-       (EBool b1, BAnd, EBool b2) -> (EBool $ b1 && b2,e, (if d then ((show b1) ++ "and" ++ (show b2)):pb else pb))
+       (EBool b1, BAnd, EBool b2) -> (EBool $ b1 && b2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _      , BAnd, _      ) -> (EErr  $ "and takes bool, bool",e,pb)
-       (EBool b1, BOr , EBool b2) -> (EBool $ b1 || b2,e, (if d then ((show b1) ++ "or" ++ (show b2)):pb else pb))
+       (EBool b1, BOr , EBool b2) -> (EBool $ b1 || b2,e,debugify pb (db,dp) (EBinop e1 op e2))
        ( _      , BOr , _      ) -> (EErr  $ "or takes bool, bool",e,pb)
 
-step d pb e (ENot b)
-  |not $ value b = (ENot (fst' $ step d pb e b),e, if d then (show (ENot b):pb) else pb)
+step (db,dp) pb e (ENot b)
+  |not $ value b = let (ex,en,bf) = evaluate (db,dp+1) e b [] in
+    (ENot ex,e,bf ++ debugify pb (db,dp) (ENot b))
   |otherwise     =
      case b of
-       (EBool b1) -> (EBool $ not b1,e, if d then (show (ENot b)):pb else pb)
+       (EBool b1) -> (EBool $ not b1,e, debugify pb (db,dp) (ENot b))
        _          -> (EErr $ "not takes bool", e, pb)
-step d pb e (EFst l)
-  | not $ value l = (EFst (fst' $ step d pb e l), e, if d then (show l):pb else pb)
+step (db,dp) pb e (EFst l)
+  | not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in
+    (EFst ex, e, debugify pb (db,dp) (EFst l))
   | otherwise     =
      case l of
-      (ELst (x:_)) -> step d pb e x
-      ENil         -> (ENil, e, if d then (show ENil):pb else pb)
+      (ELst (x:_)) -> step (db,dp) pb e x
+      ENil         -> (ENil, e,debugify pb (db,dp) ENil)
       _            -> (EErr $ "first takes a list", e, pb)
-step d pb e (ERst l)
-  | not $ value l = (ERst (fst' $ step d pb e l), e, if d then (show l):pb else pb)
+step (db,dp) pb e (ERst l)
+  | not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in
+    (ERst ex, e, bf ++ debugify pb (db,dp) (ERst l))
   | otherwise     =
      case l of
-      (ELst (_:xs)) -> (ELst $ xs, e, if d then (show xs):pb else pb)
-      ENil          -> (ENil, e, if d then (show ENil):pb else pb)
+      (ELst (_:xs)) -> (ELst $ xs, e, debugify pb (db,dp) (ELst xs))
+      ENil         -> (ENil, e,debugify pb (db,dp) ENil)
       _             -> (EErr $ "rest takes a list", e, pb)
-step d pb e (EEmt l)
-  |not $ value l = (EEmt (fst' $ step d pb e l), e, if d then (show l):pb else pb)
+step (db,dp) pb e (EEmt l)
+  |not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in 
+    (EEmt ex, e,bf ++ debugify pb (db,dp) (EEmt ex))
   |otherwise     =
     case l of
-     ELst [] -> (EBool True, e, if d then (show l):pb else pb)
-     ENil -> (EBool True, e, if d then (show ENil):pb else pb)
-     _    -> (EBool False, e, pb)
-step d pb e (ECons v l)
-  |not $ value v = (ECons (fst' $ step d pb e v) l, e, if d then (show (ECons v l)):pb else pb)
-  |not $ value l = (ECons v (fst' $ step d pb e l), e, if d then (show (ECons v l)):pb else pb)
+     ELst [] -> (EBool True, e,debugify pb (db,dp) (EEmt l))
+     ENil    -> (ENil, e,debugify pb (db,dp) ENil)
+     _    -> (EBool False, e,debugify pb (db,dp) (EEmt l))
+step (db,dp) pb e (ECons v l)
+  |not $ value v = let (ex,en,bf) = evaluate (db,dp+1) e v  [] in
+    ((ECons ex l), e,bf ++ debugify pb (db,dp) (ECons ex l))
+  |not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in
+    ((ECons v ex), e,bf ++ debugify pb (db,dp) (ECons v ex))
   |otherwise     =
     case l of
-      (ELst l) -> (ELst $ v:l, e, if d then (show l):pb else pb)
-      ENil     -> (ELst $ v: [], e, if d then (show ENil):pb else pb)
+      (ELst l) -> (ELst $ v:l, e, debugify pb (db,dp) (ELst l))
+      ENil     -> (ELst $ v: [], e, debugify pb (db,dp) ENil)
       _        -> (EErr "cons takes a value and a list", e, pb)
-step d pb e ENil = (ELst $ [],e, if d then (show ENil):pb else pb )
-step d pb e (EIf b e1 e2)
-  | not $ value b = step d pb e (EIf (fst' $ step d pb e b) e1 e2)
+step (db,dp) pb e ENil = (ELst $ [],e,debugify pb (db,dp) ENil)
+step (db,dp) pb e (EIf b e1 e2)
+  | not $ value b = let (ev,_,eb) = evaluate (db,dp+1) e b (debugify pb (db,dp) (EIf b e1 e2)) in
+                      step (db,dp) (eb++pb) e (EIf ev e1 e2)
   | otherwise     =
      case b of
-      EBool b1 -> if b1 then step d pb e e1 else step d pb e e2
+      EBool b1 -> evaluate (db,dp+1) e (if b1 then e1 else e2) (debugify pb (db,dp) (EIf b e1 e2))
       _        -> (EErr "if not given a boolean value", e, pb)
 --Applies defined function
-step d pb e (EApp s lv) =
+step (db,dp) pb e (EApp s lv) =
   case find s e of
-   (EFunc f lp e1) -> let (vals,buff) = mEval d lv [] [] e in
+   (EFunc f lp e1) -> let (vals,buff) = mEval (db,dp) lv [] [] e in
                         let fenv = (zip lp vals) ++ e in 
-                          evaluate d fenv e1 (buff++(if d then (show (EApp s lv)):pb else pb))
+                          let (xp, env, buffer) = evaluate (db,dp+1) fenv e1 [] in
+                            (xp, env, buffer ++ buff ++ debugify pb (db,dp) (EApp s lv))
+                          --evaluate d fenv e1 (if d then (buff++f:pb) else pb)
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
 
 --call for variable declaration
-step d pb e (ELet s v)
-  | existsIn s e   = (v, findAndReplace s v e, if d then (s ++ " declared as " ++ (show v)):pb else pb)
-  | value v        = (v, (s,v):e, if d then (s ++ " declared as " ++ (show v)):pb else pb)
+step (db,dp) pb e (ELet s v)
+  | existsIn s e   = (v, findAndReplace s v e, debugify pb (db,dp) (ELet s v))
+  | value v        = (v, (s,v):e, debugify pb (db,dp) (ELet s v))
   | otherwise      =
      case v of
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e, pb)
       (EFunc _ _ _) -> (EErr "cannot assign variable to a function declaration", e, pb)
-      _               -> (ELet s (fst' $ step d pb e v) , e, pb)
+      _               -> let (ex, en, bf) = evaluate (db, dp+1) e v [] in
+                          step (db,dp) bf en (ELet s ex)
 
-step d pb e (EPrint exp) =
-  let (ex, env,df) = evaluate True e exp pb in
+step (db,dp) pb e (EPrint exp) =
+  let (ex, env,df) = evaluate (db,dp+1) e exp pb in
       (exp, e, ((show $ ex) : pb))
 --call for function declaration
-step d pb e (EFunc s l e1)
+step (db,dp) pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
-  | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, if d then (s ++ "declared as " ++ (show e1)):pb else pb)
+  | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, debugify pb (db,dp) (EFunc s l e1))
   | otherwise = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), (s, (EFunc s l e1)):e, pb)
 
 --maps evaluate onto list of expressions
-mEval :: Bool -> [Exp] -> [Exp] -> Buffer -> Env -> ([Exp],Buffer)
+mEval :: DebugEnv -> [Exp] -> [Exp] -> Buffer -> Env -> ([Exp],Buffer)
 mEval _ [] sofar sofarBuff  _    = (sofar,sofarBuff)
-mEval d (x:xs) sofar sofarBuff e  = let (ex,_,b) = evaluate d e x [] in
-                                         mEval d xs (ex:sofar) (sofarBuff ++ b) e
+mEval (db,dp) (x:xs) sofar sofarBuff e  = let (ex,_,b) = evaluate (db,dp+1) e x [] in
+                                         mEval (db,dp) xs (ex:sofar) (sofarBuff ++ b) e
 
 existsIn :: String -> Env -> Bool
 existsIn _ []   = False
@@ -282,7 +298,12 @@ snd' (x, y, z) = y
 thd :: (a, b, c) -> c
 thd (x, y, z) = z
 
-evaluate :: Bool -> Env -> Exp -> Buffer  -> (Exp, Env, Buffer)
+evaluate :: DebugEnv -> Env -> Exp -> Buffer  -> (Exp, Env, Buffer)
 evaluate d env exp pb
   | not $ value exp = (\(ex, en, pb) -> evaluate d en ex pb) (step d pb env exp)
   | otherwise     =  (exp, env, pb)
+
+debugify :: Buffer -> DebugEnv -> Exp -> Buffer
+debugify pb (db,dp) exp = let prefix = "| " ++ replicate dp ' ' ++ show dp ++ " : " in
+                            if db then (prefix ++ (show exp)):pb else pb
+                            
