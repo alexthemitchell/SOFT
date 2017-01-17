@@ -69,11 +69,10 @@ mergeEnv :: Env -> Env -> Env
 mergeEnv [] orig = orig
 mergeEnv (x:xs) orig = mergeEnv xs (addToAL orig (fst x) (snd x))
 
-
 printAll :: [String] -> IO ()
 printAll [] =  putStr ""
 printAll (x:xs) = do
-  putStrLn $ show x
+  putStrLn x
   printAll xs
 
 stripComments :: String -> String
