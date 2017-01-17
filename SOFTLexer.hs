@@ -9,6 +9,8 @@ type P a = String -> LineNumber -> ParseResult a
 getLineNo :: P LineNumber
 getLineNo = \s l -> Ok l
 
+-- thenP, returnP, failP and catchP all need LineNumber handling...
+-- unsure how to do it for now.
 thenP :: P a -> (a -> P b) -> P b
 m `thenP` k = \s ->
   case m s of
@@ -78,6 +80,7 @@ isNumSymbol :: Char -> Bool
 isNumSymbol c = isDigit c || c == '.'
 
 -- Lexer --
+-- current implementation contains type errors, don't properly make recursive call.
 lexer :: (Token -> P a) -> P a
 lexer cont s =
   case s of
@@ -87,7 +90,10 @@ lexer cont s =
     '+':cs -> lexer (cont ++ TokenPlus) cs
     '-':cs -> lexer (cont ++ TokenMinus) cs
 
+
+
 {--
+-- everything in here will need to be revised
 lexer []               = []
 lexer ('\n':cs)        = lexer cs
 lexer ('"':cs)         = lexStr cs
