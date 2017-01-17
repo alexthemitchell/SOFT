@@ -215,17 +215,18 @@ step d pb e (ECons v l)
       _        -> (EErr "cons takes a value and a list", e, pb)
 step d pb e ENil = (ELst $ [],e, if d then (show ENil):pb else pb )
 step d pb e (EIf b e1 e2)
-  | not $ value b = step d pb e (EIf (fst' $ step d pb e b) e1 e2)
+  | not $ value b = let (ev,_,eb) = evaluate d e b (if d then ["if (" ++ (show b) ++ "){" ++ (show e1) ++ "} else {" ++ (show e2) ++ "}"] else []) in
+                      step d (eb++pb) e (EIf ev e1 e2)
   | otherwise     =
      case b of
-      EBool b1 -> if b1 then step d pb e e1 else step d pb e e2
+      EBool b1 -> evaluate d e (if b1 then e1 else e2) (if d then ("if (" ++ (show b1) ++ "){" ++ (show e1) ++ "} else {" ++ (show e2) ++ "}"):pb else pb)
       _        -> (EErr "if not given a boolean value", e, pb)
 --Applies defined function
 step d pb e (EApp s lv) =
   case find s e of
-   (EFunc f lp e1) -> let (vals,buff) = mEval d lv [] [] e in
+   (EFunc f lp e1) -> let (vals,buff) = mEval d lv [] pb e in
                         let fenv = (zip lp vals) ++ e in 
-                          evaluate d fenv e1 (buff++(if d then (show (EApp s lv)):pb else pb))
+                          evaluate d fenv e1 (if d then (buff++f:pb) else pb)
    _               -> (EErr $  "function " ++ s  ++ " is not declared", e, pb)
 
 --call for variable declaration
