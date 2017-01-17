@@ -186,52 +186,52 @@ step (db,dp) pb e (EBinop e1 op e2)
 
 step (db,dp) pb e (ENot b)
   |not $ value b = let (ex,en,bf) = evaluate (db,dp+1) e b [] in
-    (ENot ex,e, if db then (show (ENot b):bf)++pb else pb)
+    (ENot ex,e,bf ++ debugify pb (db,dp) (ENot b))
   |otherwise     =
      case b of
-       (EBool b1) -> (EBool $ not b1,e, if db then (show (ENot b)):pb else pb)
+       (EBool b1) -> (EBool $ not b1,e, debugify pb (db,dp) (ENot b))
        _          -> (EErr $ "not takes bool", e, pb)
 step (db,dp) pb e (EFst l)
   | not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in
-    (EFst ex, e, if db then ((show l):bf)++pb else pb)
+    (EFst ex, e, debugify pb (db,dp) (EFst l))
   | otherwise     =
      case l of
       (ELst (x:_)) -> step (db,dp) pb e x
-      ENil         -> (ENil, e, if db then (show ENil):pb else pb)
+      ENil         -> (ENil, e,debugify pb (db,dp) ENil)
       _            -> (EErr $ "first takes a list", e, pb)
 step (db,dp) pb e (ERst l)
   | not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in
-    (ERst ex, e, if db then ((show l):bf)++pb else pb)
+    (ERst ex, e, bf ++ debugify pb (db,dp) (ERst l))
   | otherwise     =
      case l of
-      (ELst (_:xs)) -> (ELst $ xs, e, if db then (show xs):pb else pb)
-      ENil          -> (ENil, e, if db then (show ENil):pb else pb)
+      (ELst (_:xs)) -> (ELst $ xs, e, debugify pb (db,dp) (ELst xs))
+      ENil         -> (ENil, e,debugify pb (db,dp) ENil)
       _             -> (EErr $ "rest takes a list", e, pb)
 step (db,dp) pb e (EEmt l)
   |not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in 
-    (EEmt ex, e, if db then ((show l):bf)++pb else pb)
+    (EEmt ex, e,bf ++ debugify pb (db,dp) (EEmt ex))
   |otherwise     =
     case l of
-     ELst [] -> (EBool True, e, if db then (show l):pb else pb)
-     ENil -> (EBool True, e, if db then (show ENil):pb else pb)
-     _    -> (EBool False, e, pb)
+     ELst [] -> (EBool True, e,debugify pb (db,dp) (EEmt l))
+     ENil    -> (ENil, e,debugify pb (db,dp) ENil)
+     _    -> (EBool False, e,debugify pb (db,dp) (EEmt l))
 step (db,dp) pb e (ECons v l)
   |not $ value v = let (ex,en,bf) = evaluate (db,dp+1) e v  [] in
-    ((ECons ex l), e, if db then ((show (ECons v l)):bf)++pb else pb)
+    ((ECons ex l), e,bf ++ debugify pb (db,dp) (ECons ex l))
   |not $ value l = let (ex,en,bf) = evaluate (db,dp+1) e l [] in
-    ((ECons v ex), e, if db then ((show (ECons v l)):bf)++pb else pb)
+    ((ECons v ex), e,bf ++ debugify pb (db,dp) (ECons v ex))
   |otherwise     =
     case l of
-      (ELst l) -> (ELst $ v:l, e, if db then (show l):pb else pb)
-      ENil     -> (ELst $ v: [], e, if db then (show ENil):pb else pb)
+      (ELst l) -> (ELst $ v:l, e, debugify pb (db,dp) (ELst l))
+      ENil     -> (ELst $ v: [], e, debugify pb (db,dp) ENil)
       _        -> (EErr "cons takes a value and a list", e, pb)
-step (db,_) pb e ENil = (ELst $ [],e, if db then (show ENil):pb else pb )
+step (db,dp) pb e ENil = (ELst $ [],e,debugify pb (db,dp) ENil)
 step (db,dp) pb e (EIf b e1 e2)
-  | not $ value b = let (ev,_,eb) = evaluate (db,dp+1) e b (if db then ["if (" ++ (show b) ++ "){" ++ (show e1) ++ "} else {" ++ (show e2) ++ "}"] else []) in
+  | not $ value b = let (ev,_,eb) = evaluate (db,dp+1) e b (debugify pb (db,dp) (EIf b e1 e2)) in
                       step (db,dp) (eb++pb) e (EIf ev e1 e2)
   | otherwise     =
      case b of
-      EBool b1 -> evaluate (db,dp+1) e (if b1 then e1 else e2) (if db then ("if (" ++ (show b1) ++ "){" ++ (show e1) ++ "} else {" ++ (show e2) ++ "}"):pb else pb)
+      EBool b1 -> evaluate (db,dp+1) e (if b1 then e1 else e2) (debugify pb (db,dp) (EIf b e1 e2))
       _        -> (EErr "if not given a boolean value", e, pb)
 --Applies defined function
 step (db,dp) pb e (EApp s lv) =
@@ -245,8 +245,8 @@ step (db,dp) pb e (EApp s lv) =
 
 --call for variable declaration
 step (db,dp) pb e (ELet s v)
-  | existsIn s e   = (v, findAndReplace s v e, if db then (s ++ " declared as " ++ (show v)):pb else pb)
-  | value v        = (v, (s,v):e, if db then (s ++ " declared as " ++ (show v)):pb else pb)
+  | existsIn s e   = (v, findAndReplace s v e, debugify pb (db,dp) (ELet s v))
+  | value v        = (v, (s,v):e, debugify pb (db,dp) (ELet s v))
   | otherwise      =
      case v of
       (ELet _ _)    -> (EErr "cannot assign variable to another variable declaration", e, pb)
@@ -258,9 +258,9 @@ step (db,dp) pb e (EPrint exp) =
   let (ex, env,df) = evaluate (db,dp+1) e exp pb in
       (exp, e, ((show $ ex) : pb))
 --call for function declaration
-step (db,_) pb e (EFunc s l e1)
+step (db,dp) pb e (EFunc s l e1)
   | value e1  = (EErr $ "cannot assign function to value", e, pb)
-  | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, if db then (s ++ "declared as " ++ (show e1)):pb else pb)
+  | existsIn s e = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), findAndReplace s (EFunc s l e1) e, debugify pb (db,dp) (EFunc s l e1))
   | otherwise = (EStr $ "Function " ++ s ++ " with parameters " ++ (show l), (s, (EFunc s l e1)):e, pb)
 
 --maps evaluate onto list of expressions
