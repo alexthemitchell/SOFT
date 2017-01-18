@@ -10,7 +10,7 @@ import Data.IORef
 -- https://www.haskell.org/happy/doc/html/sec-monads.html#sec-exception
 
 parseError :: Token -> P a
-parseError = getLineNo `thenP` \line ->
+parseError token = getLineNo `thenP` \line ->
              failP (show line ++ ": parse error") -- erroring here, likely problem with thenP
 
 {--
